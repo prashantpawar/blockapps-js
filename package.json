@@ -33,5 +33,6 @@
         "crypto-js":">=3.1",
         "request":"",
         "browser-request":""
-    }
+    },
+    "engine": "node >= 0.12.5"
 }
