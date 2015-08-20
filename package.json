@@ -33,14 +33,15 @@
     "url": "https://github.com/blockapps/blockapps-js/blockapps-js.git"
   },
   "dependencies": {
+    "big-integer": "",
+    "bluebird": "^2.9.34",
+    "browser-request": "",
+    "crypto-js": ">=3.1",
+    "enum": "",
     "ethereumjs-tx": "",
     "ethereumjs-util": "",
-    "string": "",
-    "big-integer": "",
-    "enum": "",
-    "crypto-js": ">=3.1",
     "request": "",
-    "browser-request": ""
+    "string": ""
   },
   "engine": "node >= 0.12.5",
   "devDependencies": {
