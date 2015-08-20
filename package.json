@@ -46,6 +46,7 @@
   "engine": "node >= 0.12.5",
   "devDependencies": {
     "browserify": "^11.0.1",
+    "chai": "^3.2.0",
     "mocha": "^2.2.5"
   },
   "scripts": {
