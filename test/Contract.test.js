@@ -14,6 +14,6 @@ describe("Solidity", function () {
     });
     
     it("should have a balance set to 0", function () {
-        expect(contract.balance).to.be.an.instanceof(SolTypes.Int);
+        expect(contract.balance).to.be.a('object');
     });
 });
