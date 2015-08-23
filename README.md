@@ -1,6 +1,6 @@
 # blockapps-js
 
-[![Build Status](https://travis-ci.org/prashantpawar/blockapps-js.svg?branch=features%2Fadd_unit_tests)](https://travis-ci.org/prashantpawar/blockapps-js)
+[![Build Status](https://travis-ci.org/blockapps/blockapps-js.svg)](https://travis-ci.org/prashantpawar/blockapps-js)
 
 blockapps-js is a library that exposes a number of functions for
 interacting with the Blockchain via the BlockApps API.  Currently it
