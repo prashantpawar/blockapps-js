@@ -33,21 +33,28 @@
     "url": "https://github.com/blockapps/blockapps-js/blockapps-js.git"
   },
   "dependencies": {
+    "big-integer": "",
+    "bluebird": "^2.9.34",
+    "browser-request": "",
+    "crypto-js": ">=3.1",
+    "enum": "",
     "ethereumjs-tx": "",
     "ethereumjs-util": "",
-    "string": "",
-    "big-integer": "",
-    "enum": "",
-    "crypto-js": ">=3.1",
     "request": "",
-    "browser-request": ""
+    "string": ""
   },
   "engine": "node >= 0.12.5",
   "devDependencies": {
-    "browserify": "^11.0.1"
+    "browserify": "^11.0.1",
+    "chai": "^3.2.0",
+    "gulp": "^3.9.0",
+    "gulp-jshint": "^1.11.2",
+    "gulp-mocha": "^2.1.3",
+    "mocha": "^2.2.5"
   },
   "scripts": {
-    "build": "npm run build-browser",
-    "build-browser": "sh mkbrowser.sh"
+    "build": "npm run test && npm run build-browser",
+    "build-browser": "sh mkbrowser.sh",
+    "test": "mocha"
   }
 }
