@@ -14,12 +14,13 @@ module.exports = Contract;
 function Contract(argObj) {
     if (this instanceof Contract) {
         this.balance = SolTypes.Int(0);
-        this.nonce = SolTypes.Int(0); 
+        this.nonce = SolTypes.Int(0);
 
         if (argObj === undefined) {
             this.address = null;
         }
         else if (argObj.privkey !== undefined) {
+			console.warn(argObj);
             this.privateKey = new Buffer(argObj.privkey, "hex");
             var addrBuf = privateToAddress(this.privateKey);
             this.address = SolTypes.Address(addrBuf);
@@ -139,7 +140,7 @@ function handleVar(symRow, symtab) {
     if (typeof symtab[typeName] === "undefined") {
         return handleSimpleType.bind(this)(symRow);
     }
-    
+
     var typeSymTab = symtab[typeName];
     if (typeof typeSymTab["enumNames"] != "undefined") {
         var enumNames = typeSymTab["enumNames"];
@@ -252,7 +253,7 @@ function handleSimpleType(symRow) {
     var usedNibbles = nibbles.slice(-(intBytes + intOffset)).slice(0,intBytes);
     usedNibbles.type = symRow;
     usedNibbles.isFixed = true;
-    
+
     var prefix =
         arguments[1] === undefined ?
         symRow["solidityType"].split(/\d+/)[0] :
@@ -315,7 +316,7 @@ function handleStruct(baseKey, structFields, symtab) {
 //         if (asInt.gte(topBitInt)) {
 //             asInt = asInt.minus(topBitInt).minus(topBitInt);
 //         }
-//         return asInt.over(denom);            
+//         return asInt.over(denom);
 //     default:
 //         return null; // I don't think there is anything else, though
 //     }

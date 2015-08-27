@@ -13,11 +13,11 @@ describe("Contract's empty constructor", function () {
     it("should return a new Contract object", function () {
         expect(contract).to.exist;
     });
-    
+
     it("should have the balance set", function () {
         expect(contract.balance).to.be.a('object');
     });
-    
+
     it("should have the nonce set", function () {
         expect(contract.nonce).to.be.a('object');
     });
@@ -52,4 +52,20 @@ describe("Contract's address constructor", function () {
     it("should have a Storage object", function () {
         expect(contract._storage).to.be.an('object');
     });
+});
+
+describe("Contract's private key constructor", function () {
+    var contract;
+    var privkey = "0x0000000FF1CE";
+
+    beforeEach(function() {
+        contract = new Contract({
+            privkey: privkey
+        });
+    });
+
+    it("should have privkey set", function () {
+        expect(contract.privateKey).to.an('object');
+    });
+
 });
