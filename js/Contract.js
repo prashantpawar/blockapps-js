@@ -20,7 +20,6 @@ function Contract(argObj) {
             this.address = null;
         }
         else if (argObj.privkey !== undefined) {
-			console.warn(argObj);
             this.privateKey = new Buffer(argObj.privkey, "hex");
             var addrBuf = privateToAddress(this.privateKey);
             this.address = SolTypes.Address(addrBuf);
