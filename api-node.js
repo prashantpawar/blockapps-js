@@ -3,6 +3,7 @@ module.exports = {
     Transaction : require("./js/Transaction.js"),
     Solidity    : require("./js/Solidity.js"),
     Faucet      : require("./js/Faucet.js"),
+    Units       : require("./js/Units.js"),
     Internal : {
         Types   : require("./js/SolTypes.js"),
         Storage : require("./js/Storage.js"),
