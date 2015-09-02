@@ -1,65 +1,48 @@
-var Int = require("./Int.js");
 var EthWord = require("./EthWord.js");
-var HTTPQuery = require("./HTTPQuery.js");
+var storageQuery = require("./Routes.js").storage;
+var bigInt = require('big-integer');
 
 module.exports = Storage;
 
 function Storage(address) {
-    return {
-        "_keyvals" : {},
-        "_address" : address,
-        "sync"     : setStorageKeyVals,
-        "atKey"    : getStorageKey,
-        "chunk"    : getStorageChunk
-    };
+    this.address = address;
+}
+Storage.prototype = {
+    "address" : "",
+    "getSubKey" : getSubKey,
+    "getKeyRange" : getKeyRange
+};
+
+function getSubKey(key, start, size) {
+    var promise = storageQuery({"keyhex":key, "address":this.address});
+    return promise.then(function(storageQueryResponse) {
+        var keyValue;
+        if (storageQueryResponse.length === 0) {
+            keyValue = EthWord.zero();
+        }
+        else {
+            keyValue = EthWord(storageQueryResponse[0]["value"]);
+        }
+        return keyValue.slice(start, start + size);
+    });
 }
 
 function getStorageChunk(start, itemsNum) {
-    var output = [];
-
-    Object.keys(this._keyvals).sort(String.compare).map(
-        (function(key) {
-            var keyNum = Int(key);
-            var startNum = Int(start);
-            if (keyNum.geq(startNum) && keyNum.lt(startNum.plus(itemsNum))) {
-                var skipped = keyNum.minus(startNum).minus(output.length);
-                pushZeros(output, skipped);
-                output.push(this._keyvals[key]);
-            }
-        }).bind(this)
-    );
-    var remaining = itemsNum - output.length;
-    pushZeros(output, remaining);
-    return Buffer.concat(output, 32 * itemsNum);
-}
-
-function getStorageKey(key) {
-    if (typeof this._keyvals[key] === "undefined") {
-        return EthWord.zero();
-    }
-    else {
-        return this._keyvals[key];
-    }
-}
-
-function setStorageKeyVals(apiURL, f) {
-    function setKeyvals (storageQueryResponse) {
-        var keyvals = {};
-        storageQueryResponse.forEach(function(x) {
-            var canonKey = EthWord(x.key);
-            var canonValue = EthWord(x.value);
-            keyvals[canonKey] = canonValue;
+    var first = bigInt(start, 16);
+    var maxKey = first.plus(itemsNum - 1).toString(16);
+    var promise = storageQuery({"minkey":start, "maxkey":maxKey,
+                                "address":this.address});
+    return promise.then(function(storageQueryResponse){
+        var output = [];
+        storageQueryResponse.map(function(keyVal) {
+            var thisKey = bigInt(keyVal.key, 16);
+            var skipped = thisKey.minus(first).minus(output.length);
+            pushZeros(output, skipped);
+            output.push(EthWord(keyVal.value));
         });
-
-        this._keyvals = keyvals;
-        f();
-    }
-    
-    HTTPQuery({
-        "serverURI":apiURL,
-        "queryPath":"/storage",
-        "get":{"address":this._address},
-        "callback":setKeyvals.bind(this)
+        var remaining = itemsNum - output.length;
+        pushZeros(output, remaining);
+        return Buffer.concat(output, 32 * itemsNum);        
     });
 }
 
