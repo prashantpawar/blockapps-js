@@ -1,8 +1,14 @@
 var solc = require("./Routes.js").solc;
-var solidityType = require("./solidityType.js");
 var Account = require("./Account.js");
 var Transaction = require("./Transaction.js");
 var Storage = require("./Storage.js");
+var EthWord = require("./EthWord.js");
+var sha3 = require("Crypto").sha3;
+
+var solidityType = require("./solidityType.js");
+var readSolVar = solidityType.readSolVar;
+var readInput = solidityType.readInput;
+var solMethod = solidityType.method;
 
 module.exports = Solidity;
 
@@ -41,11 +47,39 @@ function SolContract(txParams) {
         result.state = {};
         for (var sym in solObj.symTab) {
             var symRow = solObj.symTab[sym];
-            if (symRow["atStorageKey"] === undefined &&
-                symRow["jstype"] !== "Function") { // user-defined types
-                continue;
+            switch (symRow["jsType"]) {
+            case "Function":
+                result.state[sym] = solMethod(symRow);
+                break;
+            case "Mapping":
+                var mapKey = EthWord(symRow["atStorageKey"]).toString();
+                var keyRow = symRow["mappingKey"];
+                var valRow = symRow["mappingVaue"];
+
+                result.state[sym] = {
+                    set key (x) {
+                        var keyObj = readInput(keyRow, x);
+                        var key = sha3(keyObj.storageBytes() + mapKey);
+                        valRow["atStorageKey"] = key;
+                        result.state[sym].value = readSolVar(valRow, storage);
+                    }
+                };
+                break;
+            case "Struct":
+                if (symRow["atStorageKey"] === undefined) {
+                    continue;
+                }
+                var userName = symRow["solidityType"];
+                var structFields = solObj.symTab[userName]["structFields"];
+                symRow["structFields"] = structFields;
+                // fall through!
+            default:
+                Object.defineProperty(result.state, sym, {
+                    get : readSolVar.bind(null, symRow, storage),
+                    enumerable : true 
+                });
+                break;
             }
-            result.state[sym] = solidityType(symRow).storage(storage);
         }
         return result;
     }).catch(function(e) {
