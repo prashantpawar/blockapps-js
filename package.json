@@ -43,7 +43,9 @@
     "request": "",
     "string": ""
   },
-  "engine": "node >= 0.12.5",
+  "engines": {
+	  "node": ">= 0.12.5"
+  },
   "devDependencies": {
     "browserify": "^11.0.1",
     "chai": "^3.2.0",
