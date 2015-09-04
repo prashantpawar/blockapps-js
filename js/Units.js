@@ -1,6 +1,6 @@
 
 
-var units = { 
+var unitSchema = { 
     wei     : 1,
     kwei    : 1000,   
     mwei    : 1000000,
@@ -11,19 +11,19 @@ var units = {
 
 var stringToEthUnit = function(str) {
   switch (str) {
-    case 'eth': return units.eth;
-    case 'wei': return units.wei;
-    case 'kwei': return units.kwei;
-    case 'mwei': return units.mwei;
-    case 'szabo': return units.szabo;
-    case 'finney': return units.finney;
+    case 'eth': return unitSchema.eth;
+    case 'wei': return unitSchema.wei;
+    case 'kwei': return unitSchema.kwei;
+    case 'mwei': return unitSchema.mwei;
+    case 'szabo': return unitSchema.szabo;
+    case 'finney': return unitSchema.finney;
     default : throw "Unit not found";
   }
 }
 
 module.exports = (function () {
   return {
-    units : units,
+    unitSchema : unitSchema,
     stringToEthUnit : stringToEthUnit
   };
 })();
