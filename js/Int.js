@@ -12,8 +12,11 @@ function Int(x) {
     else if (typeof x === "string") {
         if (x.slice(0,2) === "0x") {
             x = x.slice(2);
+            result = bigInt(x,16);
         }
-        result = bigInt(x,16);
+        else {
+            result = bigInt(x,10);
+        }
     }
     else if (Buffer.isBuffer(x)) {
         result = bigInt(x.toString("hex"),16);

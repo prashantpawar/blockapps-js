@@ -15,8 +15,8 @@ function solc(code) {
         }
         else {
             return {
-                "vmCode" : solcResponse["contracts"][0]["bin"];
-                "symTab" : solcResponse["xabis"];
+                "vmCode" : solcResponse["contracts"][0]["bin"],
+                "symTab" : solcResponse["xabis"]
             };
         }
     });

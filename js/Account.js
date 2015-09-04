@@ -1,18 +1,22 @@
 var accountQuery = require("./Routes.js").accountAddress;
-var solidityType = require("./solidityType.js");
 var Address = require("./Address.js");
+var Int = require("./Int.js");
 
 module.exports = Account;
 
 function Account(address) {
+    if (!(this instanceof Account)) {
+        return new Account(address);
+    }
     this.address = Address(address);
 }
 Object.defineProperties(Account.prototype, {
-    "address" : { value: null, enumerable: true, writable : false },
-    "nonce"   : { get : propQuery.bind(null, this.address, "nonce") },
-    "balance" : { get : propQuery.bind(null, this.address, "balance") }
+    "address" : { value: null, enumerable: true, writable:true },
+    "nonce"   : { get : function() { return propQuery(this.address, "nonce"); } },
+    "balance" : { get : function() { return propQuery(this.address, "balance"); }},
+    "constructor" : Account
 });
 
 function propQuery(address, prop) {
-    return accountAddress(address).get(prop).then(Int);
+    return accountQuery(address).get(prop).then(Int);
 }

@@ -4,9 +4,7 @@ var submitTransaction = require("./Routes.js").submitTransaction;
 var Account = require("./Account.js");
 
 module.exports = Transaction;
-module.exports.defaults = defaults;
-
-var defaults = {
+module.exports.defaults = {
     "value": 0,
     "gasPrice": 1,
     "gasLimit": 3141592
@@ -20,9 +18,9 @@ function Transaction(argObj) {
     var p = argObj.gasPrice;
     var l = argObj.gasLimit;
     var v = argObj.value;       
-    tx.gasPrice = (p === undefined) ? defaults.gasPrice : p;
-    tx.gasLimit = (l === undefined) ? defaults.gasLimit : l;
-    tx.value    = (v === undefined) ? defaults.value : v;
+    tx.gasPrice = (p === undefined) ? exports.defaults.gasPrice : p;
+    tx.gasLimit = (l === undefined) ? exports.defaults.gasLimit : l;
+    tx.value    = (v === undefined) ? exports.defaults.value : v;
     tx.data     = argObj.data;
 
     return function(privKeyFrom, addressTo) {

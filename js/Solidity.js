@@ -4,7 +4,7 @@ var Address = require("./Address.js");
 var Transaction = require("./Transaction.js");
 var Storage = require("./Storage.js");
 var EthWord = require("./Storage.js").Word;
-var sha3 = require("Crypto").sha3;
+var sha3 = require("./Crypto").sha3;
 
 var solidityType = require("./solidityType.js");
 var readSolVar = solidityType.readSolVar;

@@ -1,7 +1,7 @@
 var Int = require("./Int.js");
 var Address = require("./Address.js");
 var nodeEnum = require('enum');
-var sha3 = require("Crypto").sha3;
+var sha3 = require("./Crypto").sha3;
 var EthWord = require("./Storage.js").Word;
 var Transaction = require("./Transaction.js");
 var Promise = require('bluebird');
@@ -258,7 +258,7 @@ function readInput(symRow, x) {
         }
         if (x.length > bytes) {
             throw "Solidity value: type Bytes: " +
-                "maximum " + bytes + " bytes (" 2*bytes " hex digits) allowed";
+                "maximum " + bytes + " bytes (" + 2*bytes + " hex digits) allowed";
         }
         var buf = Buffer(bytes);
         buf.write(x, bytes - x.length/2, x.length, "hex");

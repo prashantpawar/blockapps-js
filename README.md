@@ -49,10 +49,10 @@ features.
 
  - `ethbase.Int`: The constructor for an abstraction of Ethereum's
    32-byte words, which are implemented via the `big-integer` library.
-   The constructor accepts numbers or Ints, hex strings, or Buffers,
-   but does not truncate to 32 bytes.  Note that arithmetic must be
-   performed with the `.plus` (etc.) methods rather than the
-   arithmetic operators, which degrade big integers to 8-byte
+   The constructor accepts numbers or Ints, 0x(hex) strings, decimal
+   strings, or Buffers, but does not truncate to 32 bytes.  Note that
+   arithmetic must be performed with the `.plus` (etc.) methods rather
+   than the arithmetic operators, which degrade big integers to 8-byte
    (floating-point) Javascript numbers.
 
  - `ethbase.Address`: The constructor for Ethereum "addresses"
@@ -107,7 +107,13 @@ features.
 
 This submodule exports Javascript interfaces to the BlockApps web
 routes for querying the Ethereum "database".  All of them return
-Promises, since they must perform an asychronous request.  They are:
+Promises, since they must perform an asychronous request.  These
+requests are made to the BlockApps server and path at:
+
+ - `query.apiPrefix`: by default, `/eth/v1.0`.
+ - `query.serverURI`: by default, `http://hacknet.blockapps.net`.
+
+The routes are:
 
  - `routes.solc(code)`: takes Solidity source code and returns a
    Promise resolving to an object `{vmCode, symTab}`, where `vmCode`
