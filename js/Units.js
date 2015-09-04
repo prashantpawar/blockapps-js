@@ -1,4 +1,5 @@
 
+
 var units = { 
     wei     : 1,
     kwei    : 1000,   
@@ -8,8 +9,21 @@ var units = {
     ether   : 1000000000000000
   };
 
+var stringToEthUnit = function(str) {
+  switch (str) {
+    case 'eth': return units.eth;
+    case 'wei': return units.wei;
+    case 'kwei': return units.kwei;
+    case 'mwei': return units.mwei;
+    case 'szabo': return units.szabo;
+    case 'finney': return units.finney;
+    default : throw "Unit not found";
+  }
+}
+
 module.exports = (function () {
   return {
-    units : units
+    units : units,
+    stringToEthUnit : stringToEthUnit
   };
 })();
