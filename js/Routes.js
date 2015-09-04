@@ -2,7 +2,7 @@ var HTTPQuery = require("./HTTPQuery.js");
 var Promise = require('bluebird');
 var Address = require("./Address.js");
 
-module.exports = solc;
+module.exports.solc = solc;
 function solc(code) {
     if (typeof code !== "string" || code.match(/[0-9a-fA-F]*/) === null) {
         throw "Routes.solc(code): code must be a hex string";
@@ -22,7 +22,7 @@ function solc(code) {
     });
 }
 
-module.exports = extabi;
+module.exports.extabi = extabi;
 function extabi(code) {
     if (typeof code !== "string" || code.match(/[0-9a-fA-F]*/) === null) {
         throw "Routes.extabi(code): code must be a hex string";
@@ -30,7 +30,7 @@ function extabi(code) {
     return HTTPQuery("/extabi", {"post": {"src":code}});
 }
 
-module.exports = faucet;
+module.exports.faucet = faucet;
 function faucet(address) {
     Address.assert(address, "Routes.faucet(address): address ");
     
@@ -48,7 +48,7 @@ function faucet(address) {
     }));
 }
 
-module.exports = login;
+module.exports.login = login;
 // loginObj: email, app, loginpass
 function login(loginObj, solidityAddress) {
     if (!(solidityAddress instanceof solidityType &&
@@ -60,7 +60,7 @@ function login(loginObj, solidityAddress) {
     return HTTPQuery("/login", {"post": loginObj});
 }
 
-module.exports = wallet;
+module.exports.wallet = wallet;
 function wallet(loginObj, enckey) {
     if (typeof loginObj !== "object" || typeof enckey !== "string" ||
         enckey.match(/[0-9a-fA-F]*/) === null) {
@@ -72,7 +72,7 @@ function wallet(loginObj, enckey) {
     return HTTPQuery("/wallet", {"post": loginObj});
 }
 
-module.exports = developer;
+module.exports.developer = developer;
 function developer(loginObj) {
     if (typeof loginObj !== "object") {
         throw "Routes.developer(loginObj): must have " +
@@ -81,7 +81,7 @@ function developer(loginObj) {
     return HTTPQuery("/developer", {"post": loginObj});
 }
 
-module.exports = register;
+module.exports.register = register;
 // appObj: developer, appurl, repourl
 function register(loginObj, appObj) {
     if (typeof loginObj !== "object") {
@@ -98,7 +98,7 @@ function register(loginObj, appObj) {
     return HTTPQuery("/register", {"post": loginObj});
 }
 
-module.exports = block;
+module.exports.block = block;
 function block(blockQueryObj) {
     if (typeof blockQueryObj !== "object") {
         throw "Routes.block(blockQueryObj): blockQueryObj must be " +
@@ -107,12 +107,12 @@ function block(blockQueryObj) {
     return HTTPQuery("/block", {"get": blockQueryObj});
 }
 
-module.exports = blockLast;
+module.exports.blockLast = blockLast;
 function blockLast(n) {
     return HTTPQuery("/block/last/" + n, {"get":{}});
 }
 
-module.exports = account;
+module.exports.account = account;
 function account(accountQueryObj) {
     if (typeof accountQueryObj !== "object") {
         throw "Routes.account(accountQueryObj): accountQueryObj must be " +
@@ -121,7 +121,7 @@ function account(accountQueryObj) {
     return HTTPQuery("/account", {"get" : accountQueryObj});
 }
 
-module.exports = accountAddress;
+module.exports.accountAddress = accountAddress;
 function accountAddress(address) {
     if (address.isAddress) {
         throw "Routes.accountAddress(address): " +
@@ -130,7 +130,7 @@ function accountAddress(address) {
     return account({"address": address.toString()});
 }
 
-module.exports = submitTransaction;
+module.exports.submitTransaction = submitTransaction;
 function submitTransaction(txObj) {
     return HTTPQuery("/transaction", {"data":txObj}).return(pollPromise(function(){
         return transactionResult(txObj.partialHash).then(function(txList) {
@@ -147,7 +147,7 @@ function submitTransaction(txObj) {
     }));
 }
 
-module.exports = transaction;
+module.exports.transaction = transaction;
 function transaction(transactionQueryObj) {
     if (typeof transactionQueryObj !== "object") {
         throw "Routes.transaction(transactionQueryObj): transactionQueryObj must " +
@@ -156,7 +156,7 @@ function transaction(transactionQueryObj) {
     return HTTPQuery("/transaction", {"get": transactionQueryObj});
 }
 
-module.exports = transactionLast;
+module.exports.transactionLast = transactionLast;
 function transactionLast(n) {
     if (typeof transactionQueryObj !== "number") {
         throw "Routes.transactionLast(n): n must be an integer";
@@ -164,7 +164,7 @@ function transactionLast(n) {
     return HTTPQuery("/transaction/last/" + n, {"get":{}});
 }
 
-module.exports = transactionResult;
+module.exports.transactionResult = transactionResult;
 function transactionResult(txHash) {
     if (typeof txHash !== "string" || txHash.match(/[0-9a-fA-F]*/) === null) {
         throw "Routes.transactionResult(txHash): txHash must be a hex string";
@@ -172,7 +172,7 @@ function transactionResult(txHash) {
     return HTTPQuery("/transactionResult" + txHash, {"get":{}});
 }
 
-module.exports = storage;
+module.exports.storage = storage;
 function storage(storageQueryObj) {
     if (typeof storageQueryObj !== "object") {
         throw "Routes.storage(storageQueryObj): storageQueryObj must " +
@@ -181,7 +181,7 @@ function storage(storageQueryObj) {
     return HTTPQuery("/storage", {"get": storageQueryObj});
 }
 
-module.exports = storageAddress;
+module.exports.storageAddress = storageAddress;
 function storageAddress(address) {
     if (!(address instanceof solidityType && address["apiType"] === "Address")) {
         throw "Routes.storageAddress(address): " +

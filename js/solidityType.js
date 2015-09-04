@@ -2,7 +2,7 @@ var Int = require("./Int.js");
 var Address = require("./Address.js");
 var nodeEnum = require('enum');
 var sha3 = require("Crypto").sha3;
-var EthWord = require("./EthWord.js");
+var EthWord = require("./Storage.js").Word;
 var Transaction = require("./Transaction.js");
 var Promise = require('bluebird');
 
@@ -10,7 +10,7 @@ var Promise = require('bluebird');
  *  solMethod
  */
 
-module.exports = solMethod;
+module.exports.solMethod = solMethod;
 function solMethod(symRow) {
     var fArgs = symRow["functionArgs"];
     var fDomain = symRow["functionDomain"];
@@ -235,7 +235,7 @@ function decodeReturn(symRow, x) {
  *  readInput
  */
 
-module.exports = readInput;
+module.exports.readInput = readInput;
 function readInput(symRow, x) {
     var type = symRow["jsType"];
     switch(type) {
@@ -303,7 +303,7 @@ function readInput(symRow, x) {
  *  readSolVar
  */
 
-module.exports = readSolVar;
+module.exports.readSolVar = readSolVar;
 function readSolVar(symRow, storage) {
     var type = symRow["jsType"];
     switch(type) {
