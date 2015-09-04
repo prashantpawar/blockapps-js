@@ -11,7 +11,7 @@ var unitSchema = {
 
 var stringToEthUnit = function(str) {
   switch (str) {
-    case 'eth': return unitSchema.eth;
+    case 'ether': return unitSchema.eth;
     case 'wei': return unitSchema.wei;
     case 'kwei': return unitSchema.kwei;
     case 'mwei': return unitSchema.mwei;
