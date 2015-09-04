@@ -32,9 +32,7 @@ function extabi(code) {
 
 module.exports.faucet = faucet;
 function faucet(address) {
-    Address.assert(address, "Routes.faucet(address): address ");
-    
-    var addr = address.canonStr();
+    var addr = Address(address).toString();
     return HTTPQuery("/faucet", {"post": addr}).return(pollPromise(function () {
         return HTTPQuery("/account", {"get": addr}).then(function (accts) {
             // Only polls for the creation of a new account.
@@ -50,13 +48,8 @@ function faucet(address) {
 
 module.exports.login = login;
 // loginObj: email, app, loginpass
-function login(loginObj, solidityAddress) {
-    if (!(solidityAddress instanceof solidityType &&
-          solidityAddress["apiType"] === "Address")) {
-        throw "Routes.login(x): x must be a solidityType Address";
-    }
-    var address = solidityAddress.canonStr();
-    loginObj.address = address;
+function login(loginObj, address) {
+    loginObj.address = Address(address).toString();
     return HTTPQuery("/login", {"post": loginObj});
 }
 
@@ -123,11 +116,7 @@ function account(accountQueryObj) {
 
 module.exports.accountAddress = accountAddress;
 function accountAddress(address) {
-    if (address.isAddress) {
-        throw "Routes.accountAddress(address): " +
-            "address must be created with Address()"
-    }
-    return account({"address": address.toString()});
+    return account({"address": Address(address).toString()}).get(0);
 }
 
 module.exports.submitTransaction = submitTransaction;
@@ -150,7 +139,7 @@ function submitTransaction(txObj) {
 module.exports.transaction = transaction;
 function transaction(transactionQueryObj) {
     if (typeof transactionQueryObj !== "object") {
-        throw "Routes.transaction(transactionQueryObj): transactionQueryObj must " +
+        throw "Routes.transaction(transactionQueryObj): transactionQueryObj must "+
             "be a dictionary of query parameters";
     }
     return HTTPQuery("/transaction", {"get": transactionQueryObj});
@@ -183,9 +172,5 @@ function storage(storageQueryObj) {
 
 module.exports.storageAddress = storageAddress;
 function storageAddress(address) {
-    if (!(address instanceof solidityType && address["apiType"] === "Address")) {
-        throw "Routes.storageAddress(address): " +
-            "address must be a solidityType Address";
-    }
-    return storage({"address": address.canonStr()});
+    return storage({"address": Address(address).toString()});
 }

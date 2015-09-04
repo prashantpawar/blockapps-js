@@ -61,12 +61,11 @@ function solMethod(symRow) {
             });
         },
         callFrom : function(from) {
-            if (this._data === undefined || this._params == undefined) {
-                throw "Solidity function call: must invoke " +
-                    ".args|.argsList and .txParams first";
+            if (this._data === undefined) {
+                throw "Solidity function call: must invoke .args|.argsList first";
             }
             this._params.data = this._data;
-            return function(from, to) {
+            return function(to, from) {
                 return Transaction(this._params)(from, to).get("response").
                     then(decodeReturn.bind(null, fRet));
             }

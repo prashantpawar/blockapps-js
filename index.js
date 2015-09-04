@@ -6,4 +6,5 @@ module.exports.ethbase = {
     "Transaction" : require("./js/Transaction.js")
 }
 module.exports.routes = require("./js/Routes.js");
+module.exports.routes.defaults = require("./js/HTTPQuery").defaults;
 module.exports.Solidity = require("./js/Solidity.js");

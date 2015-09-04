@@ -5,11 +5,7 @@ var Address = require("./Address.js");
 module.exports = Account;
 
 function Account(address) {
-    if (!(this instanceof Account)) {
-        return new Account(address);
-    }
-    Address.assert(address, "Account(address): address ");
-    this.address = address;
+    this.address = Address(address);
 }
 Object.defineProperties(Account.prototype, {
     "address" : { value: null, enumerable: true, writable : false },
@@ -18,5 +14,5 @@ Object.defineProperties(Account.prototype, {
 });
 
 function propQuery(address, prop) {
-    return accountAddress(address).get(0).get(prop);
+    return accountAddress(address).get(prop).then(Int);
 }

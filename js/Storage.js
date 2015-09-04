@@ -4,8 +4,7 @@ var Address = require("./Address.js");
 
 module.exports = Storage;
 function Storage(address) {
-    Address.assert(address, "Storage(x): address ");
-    this.address = address.toString();
+    this.address = Address(address).toString();
 }
 Storage.prototype = {
     "address" : "",
@@ -30,8 +29,11 @@ function getSubKey(key, start, size) {
 function getKeyRange(start, itemsNum) {
     var first = Int(start);
     var maxKey = first.plus(itemsNum - 1).toString(16);
-    var promise = storageQuery({"minkey":start, "maxkey":maxKey,
-                                "address":this.address});
+    var promise = storageQuery({
+        "minkey":first.toString(10),
+        "maxkey":maxKey.toString(10),
+        "address":this.address
+    });
     return promise.then(function(storageQueryResponse){
         var output = [];
         storageQueryResponse.map(function(keyVal) {

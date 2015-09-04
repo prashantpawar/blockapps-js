@@ -52,20 +52,18 @@ function SolContract(txParams) {
                 var symRow = solObj.symTab[sym];
                 switch (symRow["jsType"]) {
                 case "Function":
-                    result.state[sym] = solMethod(symRow);
+                    result.state[sym] = solMethod(symRow).bind(null, newAddr);
                     break;
                 case "Mapping":
                     var mapKey = EthWord(symRow["atStorageKey"]).toString();
                     var keyRow = symRow["mappingKey"];
                     var valRow = symRow["mappingVaue"];
 
-                    result.state[sym] = {
-                        set key (x) {
-                            var keyObj = readInput(keyRow, x);
-                            var key = sha3(keyObj.storageBytes() + mapKey);
-                            valRow["atStorageKey"] = key;
-                            result.state[sym].value = readSolVar(valRow, storage);
-                        }
+                    result.state[sym] = function(x) {
+                        var keyObj = readInput(keyRow, x);
+                        var key = sha3(keyObj.storageBytes() + mapKey);
+                        valRow["atStorageKey"] = key;
+                        return readSolVar(valRow, storage);
                     };
                     break;
                 case "Struct":

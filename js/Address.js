@@ -1,9 +1,15 @@
+var Int = require("./Int.js")
+
 module.exports = Address;
 module.exports.assert = assertAddress;
 
 function Address(x) {
+    if (x.isAddress) {
+        return x;
+    }
+    
     var result = new Buffer(20);
-    if (typeof x === "number") {
+    if (typeof x === "number" || Int.isInstance(x)) {
         x = x.toString(16);
     }
     if (typeof x === "string") {

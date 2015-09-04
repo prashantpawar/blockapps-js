@@ -4,31 +4,35 @@ var submitTransaction = require("./Routes.js").submitTransaction;
 var Account = require("./Account.js");
 
 module.exports = Transaction;
+module.exports.defaults = defaults;
+
+var defaults = {
+    "value": 0,
+    "gasPrice": 1,
+    "gasLimit": 3141592
+};
 
 // argObj = {
 //   data:, value:, gasPrice:, gasLimit:
 // }
 function Transaction(argObj) {
     var tx = new ethTransaction();
-    tx.gasPrice = argObj.gasPrice;
-    tx.gasLimit = argObj.gasLimit;
-    tx.value = argObj.value;
-    tx.data = argObj.data;
+    var p = argObj.gasPrice;
+    var l = argObj.gasLimit;
+    var v = argObj.value;       
+    tx.gasPrice = (p === undefined) ? defaults.gasPrice : p;
+    tx.gasLimit = (l === undefined) ? defaults.gasLimit : l;
+    tx.value    = (v === undefined) ? defaults.value : v;
+    tx.data     = argObj.data;
 
-    return function(addressTo, privKeyFrom) {
+    return function(privKeyFrom, addressTo) {
         if (!privKeyFrom.isBuffer) {
             throw "Transaction(_, privKeyFrom): privKeyFrom must be a Buffer";
         }
-        var fromAddr = newAddress().canonStr(
-            privateToAddress(privKeyFrom).toString("hex"));
-        tx.from = fromAddr.canonStr();
+        var fromAddr = Address(privateToAddress(privKeyFrom).toString("hex"));
+        tx.from = fromAddr.toString();
         if (addressTo !=/* Intentional */ undefined) {
-            if (!(addressTo instanceof solidityType &&
-                  address["apiType"] === "Address")) {
-                throw "Transaction(addressTo, _): " +
-                    "addressTo must be a solidityType Address";
-            }
-            tx.to = addressTo.canonStr();
+            tx.to = Address(addressTo).toString();
         }
         
         Object.defineProperty(tx, "partialHash", {

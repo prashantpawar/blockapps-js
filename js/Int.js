@@ -6,7 +6,7 @@ module.exports.isInstance = bigInt.isInstance
 
 function Int(x) {
     var result;
-    if (typeof x === "number") {
+    if (typeof x === "number" || Int.isInstance(x)) {
         result = bigInt(x);
     }
     else if (typeof x === "string") {
