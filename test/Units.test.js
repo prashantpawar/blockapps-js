@@ -8,7 +8,7 @@ describe("Units exist and are integers", function () {
     var unitObj = units.unitSchema;
 
     it("should be an integer ether", function () {
-        expect(unitObj.ether).to.equal(1000000000000000);
+        expect(unitObj.ether).to.equal(1000000000000000000);
     });
     it("should exist", function () {
         expect(unitObj.ether).to.exist;
@@ -22,9 +22,9 @@ describe("Unit parsing", function () {
         var t = units.stringToEthUnit('wei');
         expect(t).to.equal(1);
     });
-    it("should be 1000000000000,", function () {
+    it("should be 1000000000000000", function () {
         var t = units.stringToEthUnit('finney');
-        expect(t).to.equal(1000000000000);
+        expect(t).to.equal(1000000000000000);
     });
 
 });
