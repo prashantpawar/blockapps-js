@@ -16,8 +16,20 @@ function Transaction(argObj) {
     tx.data = argObj.data;
 
     return function(addressTo, privKeyFrom) {
-        tx.from = privateToAddress(privKeyFrom).toString("hex");
-        tx.to = (addressTo ==/* Intentional */ undefined) ? "" : addressTo;
+        if (!privKeyFrom.isBuffer) {
+            throw "Transaction(_, privKeyFrom): privKeyFrom must be a Buffer";
+        }
+        var fromAddr = newAddress().canonStr(
+            privateToAddress(privKeyFrom).toString("hex"));
+        tx.from = fromAddr.canonStr();
+        if (addressTo !=/* Intentional */ undefined) {
+            if (!(addressTo instanceof solidityType &&
+                  address["apiType"] === "Address")) {
+                throw "Transaction(addressTo, _): " +
+                    "addressTo must be a solidityType Address";
+            }
+            tx.to = addressTo.canonStr();
+        }
         
         Object.defineProperty(tx, "partialHash", {
             get : function() {
@@ -25,7 +37,7 @@ function Transaction(argObj) {
             }
         });
 
-        return Account(tx.from).nonce.then(function(nonce) {
+        return Account(fromAddr).nonce.then(function(nonce) {
             tx.nonce = nonce;
             tx.sign(privKeyFrom);
             tx.toJSON = txToJSON;

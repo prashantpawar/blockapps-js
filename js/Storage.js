@@ -1,11 +1,13 @@
 var EthWord = require("./EthWord.js");
 var storageQuery = require("./Routes.js").storage;
-var bigInt = require('big-integer');
+var Int = require("./Int.js");
+var Address = require("./Address.js");
 
 module.exports = Storage;
 
 function Storage(address) {
-    this.address = address;
+    Address.assert(address, "Storage(x): address ");
+    this.address = address.toString();
 }
 Storage.prototype = {
     "address" : "",
@@ -27,15 +29,15 @@ function getSubKey(key, start, size) {
     });
 }
 
-function getStorageChunk(start, itemsNum) {
-    var first = bigInt(start, 16);
+function getKeyRange(start, itemsNum) {
+    var first = Int(start);
     var maxKey = first.plus(itemsNum - 1).toString(16);
     var promise = storageQuery({"minkey":start, "maxkey":maxKey,
                                 "address":this.address});
     return promise.then(function(storageQueryResponse){
         var output = [];
         storageQueryResponse.map(function(keyVal) {
-            var thisKey = bigInt(keyVal.key, 16);
+            var thisKey = Int(keyVal.key);
             var skipped = thisKey.minus(first).minus(output.length);
             pushZeros(output, skipped);
             output.push(EthWord(keyVal.value));
@@ -51,4 +53,3 @@ function pushZeros(output, count) {
         output.push(EthWord.zero());
     }
 }
-

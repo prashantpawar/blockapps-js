@@ -1,65 +1,29 @@
 module.exports = Address;
+module.exports.assert = assertAddress;
 
-function Address(x, decode) {
-    if (decode !== undefined) {
-        return decodingAddress(x);
-    }
+function Address(x) {
     var result = new Buffer(20);
+    if (typeof x === "number") {
+        x = x.toString(16);
+    }
     if (typeof x === "string") {
         hexStringToBuffer.call(result, x);
-    }
-    else if (typeof x === "number") {
-        hexStringToBuffer.call(result, x.toString(16));
     }
     else if (Buffer.isBuffer(x)) {
         x.copy(result, 20 - x.length);
     }
-    Object.defineProperties(result, {
-        encoding: {
-            value : encodingAddress,
-            enumerable : true
-        },
-        toString: {
-            value : toStringAddress,
-            enumerable: true
-        },
-        toJSON  : {
-            value : toStringAddress,
-            enumerable : true
-        },
-        isFixed : {
-            value : true,
-            enumerable : true
-        },
-        constructor : {
-            value : Buffer,
-            enumerable : true
-        }
-    });
-    return result;
-}
-
-function toStringAddress() {
-    return Buffer.prototype.toString.call(this,"hex");
-}
-
-function encodingAddress() {
-    var result = this.toString();
-    for (var i = 0; i < 12; ++i) {
-        result = "00" + result;
+    else {
+        throw "Address(x): x must be a number, a hex string, or a Buffer";
     }
+    result.toString = Buffer.prototype.toString.bind(this,"hex");
+    result.isAddress = true;
     return result;
 }
 
-function decodingAddress(x) {
-    var result = Address(x.slice(0,64));
-    Object.defineProperties(result, {
-        decodeTail : {
-            value : x.slice(64),
-            enumerable : false
-        }
-    });
-    return result;
+function assertAddress(x, prefix) {
+    if (!x.isAddress) {
+        throw "" + prefix + "was not created by Address()";
+    }
 }
 
 function hexStringToBuffer(hexString) {

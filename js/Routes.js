@@ -1,6 +1,6 @@
 var HTTPQuery = require("./HTTPQuery.js");
 var Promise = require('bluebird');
-var solidityType = require("./solidityType.js");
+var Address = require("./Address.js");
 
 module.exports = solc;
 function solc(code) {
@@ -31,14 +31,12 @@ function extabi(code) {
 }
 
 module.exports = faucet;
-function faucet(solidityAddress) {
-    if (!(solidityAddress instanceof solidityType &&
-          solidityAddress["apiType"] === "Address")) {
-        throw "Routes.faucet(x): x must be a solidityType Address";
-    }
-    var address = solidityAddress.canonStr();
-    return HTTPQuery("/faucet", {"post": address}).return(pollPromise(function () {
-        return HTTPQuery("/account", {"get": address}).then(function (accts) {
+function faucet(address) {
+    Address.assert(address, "Routes.faucet(address): address ");
+    
+    var addr = address.canonStr();
+    return HTTPQuery("/faucet", {"post": addr}).return(pollPromise(function () {
+        return HTTPQuery("/account", {"get": addr}).then(function (accts) {
             // Only polls for the creation of a new account.
             if (accts.length != 0) {
                 return Promise.resolve();
@@ -123,9 +121,18 @@ function account(accountQueryObj) {
     return HTTPQuery("/account", {"get" : accountQueryObj});
 }
 
+module.exports = accountAddress;
+function accountAddress(address) {
+    if (address.isAddress) {
+        throw "Routes.accountAddress(address): " +
+            "address must be created with Address()"
+    }
+    return account({"address": address.toString()});
+}
+
 module.exports = submitTransaction;
 function submitTransaction(txObj) {
-    return HTTPQuery("/transaction", {"data":txObj}).return(pollPromise(function() {
+    return HTTPQuery("/transaction", {"data":txObj}).return(pollPromise(function(){
         return transactionResult(txObj.partialHash).then(function(txList) {
             if (txList.length !== 0) {
                 var txResult = txList[0];
@@ -174,4 +181,11 @@ function storage(storageQueryObj) {
     return HTTPQuery("/storage", {"get": storageQueryObj});
 }
 
-
+module.exports = storageAddress;
+function storageAddress(address) {
+    if (!(address instanceof solidityType && address["apiType"] === "Address")) {
+        throw "Routes.storageAddress(address): " +
+            "address must be a solidityType Address";
+    }
+    return storage({"address": address.canonStr()});
+}

@@ -1,5 +1,5 @@
-var request = require("request");
-var request = Promise.promisify(require("bluebird"));
+var Promise = require("bluebird");
+var request = Promise.promisify(require("request"));
 
 module.exports = HTTPQuery;
 module.exports.defaults = {
@@ -13,7 +13,8 @@ function HTTPQuery(queryPath, params) {
         "json":true
     };
     if (params.keys().length != 1) {
-        throw "HTTPQuery(_, params): params must have exactly one field, the method get|post|data";
+        throw "HTTPQuery(_, params): params must have exactly one field, " +
+            "the method get|post|data";
     }
     var method = params.keys()[0];
     switch (method) {
@@ -30,7 +31,8 @@ function HTTPQuery(queryPath, params) {
         options.body = params.data;
         break;
     default:
-        throw "HTTPQuery(_, params): params must be of the form {get|post|data: {<name>: <value>, ..} }";
+        throw "HTTPQuery(_, params): params must be of the form " +
+            "{get|post|data: {<name>: <value>, ..} }";
         break;
     }
 
