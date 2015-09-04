@@ -1,5 +1,4 @@
 
-
 var unitSchema = { 
     wei     : 1,
     kwei    : 1000,   
@@ -9,9 +8,10 @@ var unitSchema = {
     ether   : 1000000000000000
   };
 
+
 var stringToEthUnit = function(str) {
   switch (str) {
-    case 'ether': return unitSchema.eth;
+    case 'ether': return unitSchema.ether;
     case 'wei': return unitSchema.wei;
     case 'kwei': return unitSchema.kwei;
     case 'mwei': return unitSchema.mwei;
@@ -27,3 +27,4 @@ module.exports = (function () {
     stringToEthUnit : stringToEthUnit
   };
 })();
+
