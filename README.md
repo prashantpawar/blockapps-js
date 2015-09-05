@@ -116,11 +116,13 @@ requests are made to the BlockApps server and path at:
 The routes are:
 
  - `routes.solc(code)`: takes Solidity source code and returns a
-   Promise resolving to an object `{vmCode, symTab}`, where `vmCode`
-   is the compiled Ethereum VM opcodes and `symTab` is an object
-   containing storage layout and type information for all state
-   variables and functions in the source.  Normally you will not need
-   to use this object.
+   Promise resolving to an object `{vmCode, symTab, name}`, where
+   `vmCode` is the compiled Ethereum VM opcodes, `name` is the name of
+   the Solidity contract (currently, only code defining a single
+   contract is supported), and `symTab` is an object containing
+   storage layout and type information for all state variables and
+   functions in the source.  Normally you will not need to use this
+   object.
 
  - `routes.extabi(code)`: like `solc`, but returns only the symTab directly.
 
@@ -213,12 +215,13 @@ Javascript.
    returns a Promise of an object with the following prototype:
 
    - *code*: the constructing code.
+   - *name*: the Solidity contract name.
    - *vmCode*: the compiled bytecode.
    - *symTab*: the storage layout and type "symbol table" of functions and variables
-   - *newContract([txParams])*: submits a contract creation transaction for the
-      *vmCode* with the optional parameters (subject to
-      `ethcore.Transaction.defaults`).  This returns the promise of a
-      "contract object" described next.
+   - *newContract(privkey, [txParams])*: submits a contract creation transaction for
+      the *vmCode* with the optional parameters (subject to
+      `ethcore.Transaction.defaults`) as well as the *required* parameter
+      *privkey*.  This returns the promise of a "contract object" described next.
 
  - The contract object has as its prototype the Solidity object that
    created it, as well as the following properties:
@@ -271,15 +274,17 @@ Javascript.
       enumerable properties are the names of the Solidity function's
       arguments, and whose values (like those of mapping keys) are
       apropriate representations of the arguments to be passed.  All
-      arguments must be passed at once.
+      arguments must be passed at once.  Returns `state.funcName`,
+      for chaining.
 
-   - *argList*: this accepts an ordered list of unnamed arguments.
-      This is chiefly useful for functions with anonymous or
-      positionally meaningful parameters.  Again, all arguments must
-      be passed at once; this is mutually exclusive with *args*.
+   - *argList*: this accepts as its own parameters the arguments of
+      the Solidity function.  This is chiefly useful for functions
+      with anonymous or positionally meaningful parameters.  Again,
+      all arguments must be passed at once; this is mutually exclusive
+      with *args*.  Returns `state.funcName`.
 
    - *txParams*: the optional object `{value, gasPrice, gasLimit}` of
-      transaction parameters.
+      transaction parameters.  Returns `state.funcName`.
 
    - *callFrom(privKey)*: calls the function from the account with the
       given private key.  Its return value is a Promise of the return

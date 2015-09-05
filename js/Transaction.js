@@ -2,6 +2,7 @@ var ethTransaction = require('ethereumjs-tx');
 var privateToAddress = require('ethereumjs-util').privateToAddress;
 var submitTransaction = require("./Routes.js").submitTransaction;
 var Account = require("./Account.js");
+var Address = require("./Address.js");
 
 module.exports = Transaction;
 module.exports.defaults = {
@@ -15,19 +16,20 @@ module.exports.defaults = {
 // }
 function Transaction(argObj) {
     var tx = new ethTransaction();
+    if (argObj === undefined) {
+        argObj = module.exports.defaults;
+    }
     var p = argObj.gasPrice;
     var l = argObj.gasLimit;
     var v = argObj.value;       
-    tx.gasPrice = (p === undefined) ? exports.defaults.gasPrice : p;
-    tx.gasLimit = (l === undefined) ? exports.defaults.gasLimit : l;
-    tx.value    = (v === undefined) ? exports.defaults.value : v;
+    tx.gasPrice = (p === undefined) ? module.exports.defaults.gasPrice : p;
+    tx.gasLimit = (l === undefined) ? module.exports.defaults.gasLimit : l;
+    tx.value    = (v === undefined) ? module.exports.defaults.value : v;
     tx.data     = argObj.data;
 
     return function(privKeyFrom, addressTo) {
-        if (!privKeyFrom.isBuffer) {
-            throw "Transaction(_, privKeyFrom): privKeyFrom must be a Buffer";
-        }
-        var fromAddr = Address(privateToAddress(privKeyFrom).toString("hex"));
+        privKeyFrom = new Buffer(privKeyFrom,"hex");
+        var fromAddr = Address(privateToAddress(privKeyFrom));
         tx.from = fromAddr.toString();
         if (addressTo !=/* Intentional */ undefined) {
             tx.to = Address(addressTo).toString();
@@ -40,7 +42,7 @@ function Transaction(argObj) {
         });
 
         return Account(fromAddr).nonce.then(function(nonce) {
-            tx.nonce = nonce;
+            tx.nonce = nonce.toString(16);
             tx.sign(privKeyFrom);
             tx.toJSON = txToJSON;
             return submitTransaction(tx);

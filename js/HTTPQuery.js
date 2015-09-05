@@ -34,5 +34,5 @@ function HTTPQuery(queryPath, params) {
         break;
     }
 
-    return request(options).spread(function(response, body) {return body;});
+    return request(options).spread(function(response, body) {return body});
 }

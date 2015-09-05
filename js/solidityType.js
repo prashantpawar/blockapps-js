@@ -1,7 +1,5 @@
 var Int = require("./Int.js");
 var Address = require("./Address.js");
-var nodeEnum = require('enum');
-var sha3 = require("./Crypto").sha3;
 var EthWord = require("./Storage.js").Word;
 var Transaction = require("./Transaction.js");
 var Promise = require('bluebird');
@@ -15,74 +13,86 @@ function solMethod(symRow) {
     var fArgs = symRow["functionArgs"];
     var fDomain = symRow["functionDomain"];
     var fRet = symRow["functionReturns"];
+    
     return {
-        set args (argObj) {
-            if (typeof argObj !== "object") {
-                throw "Solidity function call: \"args\" must be " +
-                    "an object of the form {argName: {} ..}";
-            }
-            var arr = fArgs.map(function(arg) {
-                if (argObj[arg] === undefined) {
-                    throw "Solidity function \"" + sym + "\": " +
-                        "arguments must include \"" + arg + "\"";
-                }
-                return readInput(fDomain[arg], argObj[arg]);
-            });
-            Object.defineProperty(this, "_data", {
-                value : funcArgs(symRow, arr)
-            });
-        },
-        set argList (argList) {
-            if (Object.getPrototypeOf(argList).constructor !== Array) {
-                throw "Solidity function call: " +
-                    "\"argList\" must be an array";
-            }
-            if (argList.length !== fArgs.length) {
-                throw "Solidity function \"" + sym + "\": " +
-                    "must be exactly " + fArgs.length + " arguments";
-            }
-
-            var arr = fArgs.forEach(function(arg, i) {
-                return readInput(fDomain[arg], argObj[i]);
-            });
-            Object.defineProperty(this, "_data", {
-                value : funcArgs(symRow, arr)
-            });
-        },
-        set txParams (txParams) {
-            ["value", "gasPrice", "gasLimit"].map(function(param) {
-                if (txParams[param] === undefined) {
-                    throw "Solidity function call: \"txParams\"" +
-                        "must be {value, gasPrice, gasLimit}";
-                }
-            });
-            Object.defineProperty(this, "_params", {
-                value: txParams
-            });
-        },
-        callFrom : function(from) {
+        "callToFrom" : function (to, from) {
             if (this._data === undefined) {
                 throw "Solidity function call: must invoke .args|.argsList first";
             }
             this._params.data = this._data;
-            return function(to, from) {
-                return Transaction(this._params)(from, to).get("response").
-                    then(decodeReturn.bind(null, fRet));
+            return Transaction(this._params)(from, to).get("response").
+                then(decodeReturn.bind(null, fRet));
+        },
+        "args" : function (argObj) {
+            if (typeof argObj !== "object") {
+                throw "Solidity function call: \"args\" must be " +
+                    "an object of the form {argName: {} ..}";
             }
-        }
+            var arr = fArgs.map(function(arg, i) {
+                if (argObj[arg] === undefined) {
+                    throw "Solidity function \"" + sym + "\": " +
+                        "arguments must include \"" + arg + "\"";
+                }
+                return readInput(fDomain[i], argObj[arg]);
+            });
+            Object.defineProperty(this, "_data", {
+                value : funcArgs(symRow, arr)
+            });
+            return this;
+        },
+        "argList": function () {
+            if (arguments.length !== fArgs.length) {
+                throw "Solidity function \"" + sym + "\": " +
+                    "takes exactly " + fArgs.length + " arguments";
+            }
+            var params = arguments;
+            var arr = fArgs.map(function(arg, i) {
+                return readInput(fDomain[i], params[i]);
+            });
+            Object.defineProperty(this, "_data", {
+                value : funcArgs(symRow, arr)
+            });
+            return this;
+        },
+        "txParams" : function (txParams) {
+            Object.defineProperty(this, "_params", {
+                value: txParams
+            });
+            return this;
+        },
     };
 }
 
 function funcArgs(symRow, x) {
     var symRow1 = {
         "jsType" : "Array",
-        "arrayElements" : symRow["functionDomain"]
+        "arrayElements" : symRow["functionDomain"],
+        "arrayLength" : symRow["functionDomain"].length
     };
     return symRow["functionHash"] + funcArg(symRow1, x);
 }
 
-function funcArg(symRow1, y) {
-    var type = symRow1["jsType"];
+module.exports.mapArg = mapArg
+function mapArg(symRow, x) {
+    switch (symRow["jsType"]) {
+    case "Address": case "Bool": case "Int":
+        return funcArg(symRow, x);
+    case "Bytes":
+        if (!isDynamic(symRow)) {
+            var result = x.toString("hex");
+            while (result.length < 64) { // nibbles
+                result = "00" + result;
+            }
+            return result;
+        }
+        // Fall through!
+    default:
+        throw "Solidity mapping: argument cannot have type "+symRow["solidityType"];
+    }
+}
+
+function funcArg(symRow, y) {
+    var type = symRow["jsType"];
     switch (type) {
     case "Address":
         var result = y.toString();
@@ -97,8 +107,7 @@ function funcArg(symRow1, y) {
         }
         return result;
     case "Bytes":
-        var length = isDynamic(symRow1) ? null : y.length;
-        return encodingBytes(y.toString("hex"), length);
+        return encodingBytes(y.toString("hex"), isDynamic(symRow));
     case "Int":
         if (y.geq(0)) {
             var result = y.toString(16);
@@ -111,15 +120,15 @@ function funcArg(symRow1, y) {
             return result;
         }
         else {
-            return funcArg(symRow1, y.plus(Int(2).pow(256)));
+            return funcArg(symRow, y.plus(Int(2).pow(256)));
         }
     case "String":
         return encodingBytes(y.toString("utf8"), null);
     case "Array":
-        var eltRows = symRow1["arrayElements"];
+        var eltRows = symRow["arrayElements"];
         if (eltRows === undefined) {
             eltRows = (new Array(y.length)).map(function() {
-                return symRow1["arrayElement"];
+                return symRow["arrayElement"];
             });
         }
 
@@ -134,7 +143,7 @@ function funcArg(symRow1, y) {
                 tail.push(funcArg(objRow, obj));
             }
             else {
-                var enc = funcArg(rowObj, obj);
+                var enc = funcArg(objRow, obj);
                 totalHeadLength += enc.length/2; // Bytes not nibbles
                 head.push(enc);
                 tail.push("");
@@ -155,7 +164,7 @@ function funcArg(symRow1, y) {
         });
 
         var enc = head.join("") + tail.join("");
-        if (isDynamic(symRow1)) {
+        if (isDynamic(symRow)) {
             len = funcArg({"jsType": "Int"}, Int(y.length));
             enc = len + enc
         }
@@ -166,15 +175,14 @@ function funcArg(symRow1, y) {
     }
 }
 
-
-function encodingBytes(hexString, length) {
+function encodingBytes(hexString, dynamic) {
     var result = hexString;
     while (result.length % 32 != 0) {
         result = result + "00";
     }
 
-    if (length !== null) {
-        var len = funcArg({"jsType" : "Int"}, Int(hexString.length));
+    if (dynamic) {
+        var len = funcArg({"jsType" : "Int"}, Int(hexString.length/2));
         result = len + result;
     }
     
@@ -187,7 +195,7 @@ function decodeReturn(symRow, x) {
             return parseInt(symRow1.arrayLength,16);
         }
         else {
-            return go({ "jsType" : "Int" });
+            return parseInt(go({ "jsType" : "Int" }),16);
         }
     }
     
@@ -211,7 +219,7 @@ function decodeReturn(symRow, x) {
             x = x.slice(roundLength);
             return result;
         case "Int":
-            var result = Int(x.slice(0,64));
+            var result = twosComplement(symRow1, Int("0x" + x.slice(0,64)));
             x = x.slice(64);
             return result;
         case "String":
@@ -244,25 +252,25 @@ function readInput(symRow, x) {
     case "Bool":
         return x;
     case "Bytes":
-        var bytes = isDynamic(symRow) ? symRow["arrayLength"] : symRow["bytesUsed"];
-        bytes = parseInt(bytes, 16);
-        
         if (typeof x !== "string") {
             throw "Solidity value: type Bytes: takes hex string input";
         }
         if (x.slice(0,2) === "0x") {
             x = x.slice(2);
         }
-        if (x.lengh % 2 != 0) {
+        if (x.length % 2 != 0) {
             x = "0" + x;
         }
-        if (x.length > bytes) {
-            throw "Solidity value: type Bytes: " +
-                "maximum " + bytes + " bytes (" + 2*bytes + " hex digits) allowed";
+
+        if (!isDynamic(symRow)) {
+            var bytes = parseInt(symRow["arrayLength"],16);
+            if (x.length !== bytes) {
+                throw "Solidity value: type bytes" + bytes + ": " +
+                    bytes + " bytes (" + 2*bytes + " hex digits) required";
+            }
         }
-        var buf = Buffer(bytes);
-        buf.write(x, bytes - x.length/2, x.length, "hex");
-        return buf;
+
+        return new Buffer(x, "hex");
     case "Enum":
         return x;
     case "Int":
@@ -308,104 +316,40 @@ function readSolVar(symRow, storage) {
     switch(type) {
     case "Address":
         return simpleBuf(symRow, storage).then(Address);
-    case "Array":
-        if (isDynamic(symRow)) {
-            symRow = dynamicRow(symRow, storage);
-        }
-
-        return Promise.join(symRow, function(symRow) {
-            var arrElt = symRow["arrayElement"];
-            var eltRow = {};
-            for (var name in arrElt) {
-                eltRow[name] = arrElt[name];
-            };
-            eltRow["atStorageKey"] = symRow["atStorageKey"];
-            eltRow["atStorageOffset"] = "0x0";
-
-            var eltSize = parseInt(eltRow["bytesUsed"],16);
-            var numElts = parseInt(symRow["arrayLength"],16);
-
-            var arrayCR = parseInt(symRow["arrayNewKeyEach"],16);
-            var arrayCRSkip = (eltSize < 32 ? 1 : eltSize / 32);
-
-            var result = [];
-            while (result.length < numElts) {
-                result.push(readSolVar(eltRow, storage));
-                
-                if (result.length % arrayCR == 0) {
-                    var oldKey = Int(eltRow["atStorageKey"]);
-                    eltRow["atStorageKey"] = oldKey.plus(arrayCRSkip).toString(16);
-                    eltRow["atStorageOffset"] = "0x0";
-                }
-                else {
-                    var oldOff = parseInt(eltRow["atStorageOffset"]);
-                    eltRow["atStorageOffset"] = (eltSize + oldOff).toString(16);
-                }
-            }
-            return Promise.all(result);
-        });
-
     case "Bool":
-        return simpleBuf(symRow, storage).get(0).then(Object.is.bind(1));
+        return simpleBuf(symRow, storage).get(0).then(function(x) {return x==1;});
     case "Bytes":
         if (!isDynamic(symRow)) {
             return simpleBuf(symRow, storage);
         }
         else {
-            dynamicRow(symRow, storage).then(function(symRow) {
+            return dynamicRow(symRow, storage).then(function(symRow) {
                 var length = parseInt(symRow["arrayLength"],16);
                 var realKey = symRow["atStorageKey"];
-                
-                var numSlots = (length + 31)/32; // Round up
-                return storage.getKeyRange(realKey,numSlots).call(slice,0,length);
+
+                var numSlots = Math.floor((length + 31)/32); // Round up
+                return storage.getKeyRange(realKey,numSlots).call("slice",0,length)
             });
         }
-    case "Enum":
-        var symRow1 = {}
-        for (var name in symRow) {
-            symRow1[name] = symRow[name];
-        }
-        symRow1["jsType"] = "Int";
-        return readSolVar(symRow1, storage).call(valueOf);
     case "Int":
-        return simpleBuf(symRow, storage).then(Int);
+        return simpleBuf(symRow, storage).then(Int).
+            then(twosComplement.bind(null,symRow));
     case "String":
         var symRow1 = {}
         for (var name in symRow) {
             symRow1[name] = symRow[name];
         }
         symRow1["jsType"] = "Bytes";
-        return readSolVar(symRow1, storage).call(toString, "utf8");
-    case "Struct":
-        var structFields = symRow["structFields"];
-        var baseKey = Int(symRow["atStorageKey"]);
-        
-        var result = {};
-        for (var field in structFields) {
-            var structField = structFields[name];
-            var fieldRow = {};
-            for (var name in structFields[field]) {
-                fieldRow[name] = structField[name];
-            }
-            var fieldKey = Int(fieldRow["atStorageKey"]);
-            var realKey = baseKey.plus(fieldKey);
-            fieldRow["atStorageKey"] = baseKey.plus(fieldKey).toString(16);
-            if (isDynamic(fieldRow)) {
-                var realKeyHex = EthWord(realKey.toString(16)).toString();
-                fieldRow["arrayDataStart"] = sha3(realKeyHex);
-            }
-            result[field] = readSolVar(fieldRow, storage);
-        }
-
-        return Promise.props(result);
+        return readSolVar(symRow1, storage).call("toString", "utf8");
     default:
         throw "Solidity contract: cannot read type " + type + " from storage";
     }
 }
 
+module.exports.dynamicRow = dynamicRow;
 function dynamicRow(symRow, storage) {
-    var key = EthWord(symRow["atStorageKey"]);
-    var length = storage.getSubKey(key,0,32).call(toString, "hex");
+    var key = EthWord(symRow["atStorageKey"]).toString();
+    var length = storage.getSubKey(key,0,32).call("toString", "hex");
     var realKey = symRow["arrayDataStart"];
 
     var result = {};
@@ -420,15 +364,16 @@ function dynamicRow(symRow, storage) {
 }
 
 function simpleBuf(symRow, storage) {
-    var symKey = EthWord(symRow["atStorageKey"]);
-    var symOffset = (typeof symRow["atStorageOffset"] === "undefined") ?
-        "0x0" : symRow["atStorageOffset"];
+    var symKey = symRow["atStorageKey"];
+    var symOffset = (symRow["atStorageOffset"] === undefined) ?
+        "0" : symRow["atStorageOffset"];
     var intOffset = parseInt(symOffset,16);
     var intBytes = parseInt(symRow["bytesUsed"],16);
 
     return storage.getSubKey(symKey, intOffset, intBytes);
 }
 
+module.exports.isDynamic = isDynamic;
 function isDynamic(symRow) {
     switch (symRow["jsType"]) {
     case "Array": case "Bytes": case "String":
@@ -438,5 +383,23 @@ function isDynamic(symRow) {
         // Fall through!
     default:
         return false;
+    }
+}
+
+function twosComplement(symRow, x) {
+    if (symRow["solidityType"][0] !== 'u') { // Signed
+        var byteLength = parseInt(symRow["bytesUsed"],16);
+        var modInt = Int(256).pow(byteLength);
+        var topBitInt = modInt.shiftRight(1);
+        var hasTopBit = x.and(topBitInt).neq(0);
+        if (hasTopBit) {
+            return x.minus(modInt);
+        }
+        else {
+            return x;
+        }
+    }
+    else {
+        return x;
     }
 }

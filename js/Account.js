@@ -18,5 +18,5 @@ Object.defineProperties(Account.prototype, {
 });
 
 function propQuery(address, prop) {
-    return accountQuery(address).get(prop).then(Int);
+    return accountQuery(address).get(prop).then(Int, Int.bind(null, 0));
 }

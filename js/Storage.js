@@ -1,6 +1,7 @@
 var storageQuery = require("./Routes.js").storage;
 var Int = require("./Int.js");
 var Address = require("./Address.js");
+var NotDoneError = require("./pollPromise.js").NotDoneError;
 
 module.exports = Storage;
 function Storage(address) {
@@ -14,37 +15,41 @@ Storage.prototype = {
 
 function getSubKey(key, start, size) {
     var promise = storageQuery({"keyhex":key, "address":this.address});
-    return promise.then(function(storageQueryResponse) {
-        var keyValue;
-        if (storageQueryResponse.length === 0) {
-            keyValue = EthWord.zero();
-        }
-        else {
-            keyValue = EthWord(storageQueryResponse[0]["value"]);
-        }
-        return keyValue.slice(start, start + size);
+    return promise.catch(NotDoneError, function() {
+        return [{"key" : key, "value" : "0"}];
+    }).get(0).then(function(storageItem) {
+        var keyValue = EthWord(storageItem.value);
+        return keyValue.slice(32 - (start + size), 32 - start);
     });
 }
 
 function getKeyRange(start, itemsNum) {
-    var first = Int(start);
-    var maxKey = first.plus(itemsNum - 1).toString(16);
+    var first = Int("0x" + start);
+    var maxKey = first.plus(itemsNum - 1);
     var promise = storageQuery({
         "minkey":first.toString(10),
         "maxkey":maxKey.toString(10),
         "address":this.address
     });
-    return promise.then(function(storageQueryResponse){
-        var output = [];
+    return promise.catch(NotDoneError, function() {
+        return [];
+    }).then(function(storageQueryResponse){
+        var keyVals = {};
         storageQueryResponse.map(function(keyVal) {
-            var thisKey = Int(keyVal.key);
-            var skipped = thisKey.minus(first).minus(output.length);
-            pushZeros(output, skipped);
-            output.push(EthWord(keyVal.value));
+            keyVals[EthWord(keyVal.key).toString()] = keyVal.value;
         });
-        var remaining = itemsNum - output.length;
-        pushZeros(output, remaining);
-        return Buffer.concat(output, 32 * itemsNum);        
+        
+        var output = new Array(itemsNum);
+        for (var i = 0; i < itemsNum; ++i) {
+            var keyi = EthWord(first.plus(i)).toString();
+            if (keyi in keyVals) {
+                output[i] = keyVals[keyi];
+            }
+            else {
+                output[i] = EthWord.zero().toString();
+            }
+        }
+        return Buffer(output.join(""),"hex");
     });
 }
 
@@ -66,14 +71,15 @@ function EthWord(x) {
     if (x.length % 2 != 0) {
         x = "0" + x;
     }
-    var numBytes = hexString.length / 2
+    var numBytes = x.length / 2
 
     if (numBytes > 32) {
         throw "EthWord(x): x must have at most 32 bytes";
     }
-
     var result = new Buffer(32);
     result.fill(0);
-    result.write(hexString, 32 - numBytes, numBytes, "hex");
+    result.write(x, 32 - numBytes, numBytes, "hex");
+
+    result.toString = Buffer.prototype.toString.bind(result, "hex");
     return result;
 }
