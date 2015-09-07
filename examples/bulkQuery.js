@@ -1,67 +1,63 @@
-var Contract = require("Contract");
-var Solidity = require("Solidity");
-var claimEther = require("claimEther");
+var blockapps = require("blockapps-js");
+var faucet = blockapps.routes.faucet;
+var Solidity = blockapps.Solidity;
+var Promise = require("bluebird");
 
-var apiURL = "http://hacknet.blockapps.net";
-var contract;
-var keystore;
+blockapps.pollEveryMS = 1000
+
+var contract, keystore;
 var names = {};
+var privkey = "1dd885a423f4e212740f116afa66d40aafdbb3a381079150371801871d9ea281";
 
 window.onload = start;
 
 function start() {
+    document.getElementById('placardArea').value = "No donations so far...";
+    
+    var donate = document.getElementById('donate');
+    donate.disabled = true;    
+
     var randomSeed = ethlightjs.keystore.generateRandomSeed();
     keystore = new ethlightjs.keystore(randomSeed, "");
-    Solidity(code).toContract({
-        "apiURL"      : apiURL,
-        "fromAccount" : Contract({"privkey":"1dd885a423f4e212740f116afa66d40aafdbb3a381079150371801871d9ea281"}), // e1fd0d
-        "value"       : 0,
-        "gasPrice"    : 1,
-        "gasLimit"    : 3141592
-    }, function(c) {
-        console.log("contract:"); console.log(c);
+
+    Solidity(code).call("newContract", privkey).then(function(c) {
         contract = c;
-        document.getElementById("donate").disabled = false;
+        donate.disabled = false;
+    }, function() {
+        console.log("Timed out");
+        donate.disabled = false;
     });
 }
 
 function buttonPush() {
-    var name = document.getElementById('patronName').value;
-    patronize(
-        apiURL,
-        name,
-        parseInt(document.getElementById('patronValue').value,10),
-        contract,
-        function () {
-            document.getElementById('donate').disabled = true;
-        },
-        function (reply) {
-            alert(reply);
-            artistPlacard()
-            document.getElementById('donate').disabled = false;
-        });
+    var name = document.getElementById('patronName').value; 
+    var value = document.getElementById('patronValue').value;
+    var placard = document.getElementById("placardArea");    
+    var donate = document.getElementById('donate');
+
+    donate.disabled = true;
+    fund(name). 
+        return(patronize(name, value)).
+        then(function(reply) {
+            console.log(reply);
+            return artistPlacard().then(function(text){
+                placard.value = text;
+            });
+        }, function(e) {
+            console.log(e);
+        }).finally(function() {
+            donate.disabled = false;
+        }).catch(function() {});
 }
 
-function artistPlacard() {
-    function printPlacard() {
-        console.log(contract)
-        var result = "";
-        result += "My name is: " + contract.get["artist"] + "\n";
-        result += "I have been generously supported by " + contract.get["numGrants"] + " grant(s) from the following patrons:" + "\n";
-        contract.get["patrons"].forEach(function(addr) {
-            console.log("Addr:");console.log(addr.toString());
-            var patron = contract.get["patronInfo"](addr);
-            result += "  The honorable " + patron.name;
-            if (patron.returning) {
-                result += " (repeatedly)";
-            }
-            result += ": " + patron.totalPayments + "\n";
-        });
-        document.getElementById("placardArea").textContent = result;
-    }
-    contract.sync(apiURL, printPlacard);
+function fund(name) {
+    return faucet(patronKey(name).address);
 }
 
+function patronize(name, value) {
+    return contract.state.patronize(name).txParams({"value":value}).
+        callFrom(patronKey(name).privkey);
+}
 
 function patronKey(name) {
     if (name in names) {
@@ -69,37 +65,36 @@ function patronKey(name) {
     }
     else {
         var address = keystore.generateNewAddress("");
-        names[name] = keystore.exportPrivateKey(address,"");
+        names[name] = {
+            "privkey" : keystore.exportPrivateKey(address,""),
+            "address" : address
+        }
         return names[name];
     }
 }
 
-function patronize(blockappsNode, name, value, contract,
-                   unavailable, usereply) {
-    unavailable();
-    var fromAccount = Contract({"privkey": patronKey(name)});
+function artistPlacard() {
+    return Promise.join(
+        contract.state.artist,
+        contract.state.numGrants,
+        contract.state.patrons.map(contract.state.patronInfo),
+        function(artist, numGrants, pInfos) {
+            var lines = [
+                "My name is: " + artist,
+                "I have been generously supported by " + numGrants +
+                    " grant(s) from the following patrons:",
+            ]
 
-    claimEther({
-        "apiURL" : blockappsNode,
-        "callback" : afterFaucet,
-        "contract" : fromAccount
-    });
-    
-    function afterFaucet () {
-        contract.call(blockappsNode, afterCall, {
-            "funcName"    : "patronize",
-            "fromAccount" : fromAccount,
-            "value"       : value,
-            "gasPrice"    : 1,
-            "gasLimit"    : 3141592
-        }, {
-            "name" : name
-        });
-    }
-
-    function afterCall(name) {
-        contract.sync(blockappsNode, usereply.bind(null, name));
-    }
+            return lines.concat(pInfos.map(function(pInfo) {
+                var result = "  The honorable " + pInfo.name;
+                if (pInfo.returning) {
+                    result += " (repeatedly)";
+                }
+                result += ": " + pInfo.totalPayments + " wei";
+                return result;
+            })).join("\n");
+        }
+    );
 }
 
 var code = "\
@@ -124,8 +119,6 @@ contract StarvingArtist {\n\
   }\n\
 \n\
   function patronize(string name) returns (string) {\n\
-    ++numGrants;\n\
-\n\
     if (msg.value == 0) {\n\
       return \"Thanks for nothing!\";\n\
     }\n\
@@ -149,6 +142,7 @@ contract StarvingArtist {\n\
     }\n\
     patron.totalPayments += msg.value;\n\
     patronInfo[msg.sender] = patron;\n\
+    ++numGrants;\n\
     return message;\n\
   }\n\
 \n\

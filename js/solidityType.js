@@ -14,54 +14,61 @@ function solMethod(symRow) {
     var fDomain = symRow["functionDomain"];
     var fRet = symRow["functionReturns"];
     
-    return {
-        "callToFrom" : function (to, from) {
-            if (this._data === undefined) {
-                throw "Solidity function call: must invoke .args|.argsList first";
-            }
-            this._params.data = this._data;
-            return Transaction(this._params)(from, to).get("response").
-                then(decodeReturn.bind(null, fRet));
-        },
-        "args" : function (argObj) {
-            if (typeof argObj !== "object") {
-                throw "Solidity function call: \"args\" must be " +
-                    "an object of the form {argName: {} ..}";
-            }
-            var arr = fArgs.map(function(arg, i) {
+    return function() {
+        var arr;
+
+        if (arguments.length === 1 &&
+            arguments[0] instanceof Object &&
+            !(arguments[0] instanceof Array))
+        { // Whew!
+            var argObj = arguments[0];
+            arr = fArgs.map(function(arg, i) {
                 if (argObj[arg] === undefined) {
                     throw "Solidity function \"" + sym + "\": " +
                         "arguments must include \"" + arg + "\"";
                 }
                 return readInput(fDomain[i], argObj[arg]);
             });
-            Object.defineProperty(this, "_data", {
-                value : funcArgs(symRow, arr)
-            });
-            return this;
-        },
-        "argList": function () {
+        }
+        else {
             if (arguments.length !== fArgs.length) {
                 throw "Solidity function \"" + sym + "\": " +
                     "takes exactly " + fArgs.length + " arguments";
             }
             var params = arguments;
-            var arr = fArgs.map(function(arg, i) {
+            arr = fArgs.map(function(arg, i) {
                 return readInput(fDomain[i], params[i]);
             });
-            Object.defineProperty(this, "_data", {
-                value : funcArgs(symRow, arr)
-            });
-            return this;
-        },
-        "txParams" : function (txParams) {
-            Object.defineProperty(this, "_params", {
-                value: txParams
-            });
-            return this;
-        },
-    };
+        }
+
+        return {
+            _to : this,
+            _data : funcArgs(symRow, arr),
+            _params : {},
+            _ret : fRet,
+            txParams : txParams,
+            callFrom : callFrom
+        };
+    }
 }
+
+
+function txParams(txParams) {
+    if (txParams instanceof Object) {
+        this._params = txParams;
+    }
+    return this;
+}
+
+function callFrom(from) {
+    if (this._data === undefined) {
+        throw "Solidity function call: must invoke .args|.argsList first";
+    }
+    this._params.data = this._data;
+    return Transaction(this._params)(from, this._to).get("response").
+        then(decodeReturn.bind(null, this._ret));
+}
+
 
 function funcArgs(symRow, x) {
     var symRow1 = {
@@ -123,7 +130,8 @@ function funcArg(symRow, y) {
             return funcArg(symRow, y.plus(Int(2).pow(256)));
         }
     case "String":
-        return encodingBytes(y.toString("utf8"), null);
+        var bytes = new Buffer(y, "utf8")
+        return encodingBytes(bytes.toString("hex"), true);
     case "Array":
         var eltRows = symRow["arrayElements"];
         if (eltRows === undefined) {
@@ -177,7 +185,7 @@ function funcArg(symRow, y) {
 
 function encodingBytes(hexString, dynamic) {
     var result = hexString;
-    while (result.length % 32 != 0) {
+    while (result.length % 64 != 0) {
         result = result + "00";
     }
 
@@ -190,12 +198,18 @@ function encodingBytes(hexString, dynamic) {
 }
 
 function decodeReturn(symRow, x) {
+    if (symRow === undefined) {
+        return Promise.resolve(null);
+    }
+    
     function getLength(symRow1) {
         if (!isDynamic(symRow1)) {
             return parseInt(symRow1.arrayLength,16);
         }
         else {
-            return parseInt(go({ "jsType" : "Int" }),16);
+            return parseInt(go({
+                "jsType" : "Int", "solidityType" : "uint256"
+            }),16);
         }
     }
     
@@ -215,7 +229,8 @@ function decodeReturn(symRow, x) {
             var length = getLength(symRow1);
             var roundLength = Math.floor(length + 32); // Rounded up
 
-            var result = (new Buffer(length)).write(x,0,length,"hex");
+            var result = new Buffer(length);
+            result.write(x,0,length,"hex");
             x = x.slice(roundLength);
             return result;
         case "Int":
@@ -223,7 +238,7 @@ function decodeReturn(symRow, x) {
             x = x.slice(64);
             return result;
         case "String":
-            return go({ "jsType" : "Bytes" }).toString("utf8");            
+            return go({ "jsType" : "Bytes" }).toString("utf8");
         case "Array":
             var length = getLength(symRow1);
             x = x.slice(length * 64); // drop the "heads"

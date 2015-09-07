@@ -8,25 +8,26 @@ function solc(code) {
     if (typeof code !== "string") {
         throw Promise.OperationalError("code must be a string");
     }
-    return HTTPQuery("/solc", {"post": {"src":code}}).then(function(solcResponse) {
-        if ("error" in solcResponse) {
-            throw Promise.OperationalError(solcResponse.error);
-        }
-        if (solcResponse["contracts"].length != 1) {
-            throw Promise.OperationalError(
-                "Code must (currently) define one and only one contract."
-            );
-        }
-        else {
-            var symTab0 = solcResponse["xabis"];
-            var contractName = Object.keys(symTab0)[0];
-            return {
-                "vmCode" : solcResponse["contracts"][0]["bin"],
-                "symTab" : symTab0[contractName],
-                "name"   : contractName
-            };
-        }
-    });
+    return HTTPQuery("/solc", {"post": {"src":code}}).
+        then(function(solcResponse) {
+            if ("error" in solcResponse) {
+                throw Promise.OperationalError(solcResponse.error);
+            }
+            if (solcResponse["contracts"].length != 1) {
+                throw Promise.OperationalError(
+                    "Code must (currently) define one and only one contract."
+                );
+            }
+            else {
+                var symTab0 = solcResponse["xabis"];
+                var contractName = Object.keys(symTab0)[0];
+                return {
+                    "vmCode" : solcResponse["contracts"][0]["bin"],
+                    "symTab" : symTab0[contractName],
+                    "name"   : contractName
+                };
+            }
+        });
 }
 
 module.exports.extabi = extabi;
@@ -34,22 +35,23 @@ function extabi(code) {
     if (typeof code !== "string" || code.match(/[0-9a-fA-F]*/) === null) {
         throw Promise.OperationalError("code must be a hex string");
     }
-    return HTTPQuery("/extabi", {"post": {"src":code}}).then(function(extabi) {
-        if (Object.keys(extabi).length != 1) {
-            throw Promise.OperationalError(
-                "Code must (currently) define one and only one contract."
-            );            
-        }
-        else {
-            return extabi;
-        }
-    });
+    return HTTPQuery("/extabi", {"post": {"src":code}}).
+        then(function(extabi) {
+            if (Object.keys(extabi).length != 1) {
+                throw Promise.OperationalError(
+                    "Code must (currently) define one and only one contract."
+                );            
+            }
+            else {
+                return extabi;
+            }
+        });
 }
 
 module.exports.faucet = faucet;
 function faucet(address) {
     var addr = Address(address).toString();
-    return HTTPQuery("/faucet", {"post": addr}).return(
+    return HTTPQuery("/faucet", {"post": {"address" : addr}}).return(
         pollPromise(accountAddress.bind(null,addr))
     ).catch(Promise.TimeoutError, function(e) {
         return Promise.reject(

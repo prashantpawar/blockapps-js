@@ -3,6 +3,7 @@ var privateToAddress = require('ethereumjs-util').privateToAddress;
 var submitTransaction = require("./Routes.js").submitTransaction;
 var Account = require("./Account.js");
 var Address = require("./Address.js");
+var Int = require("./Int.js");
 
 module.exports = Transaction;
 module.exports.defaults = {
@@ -21,10 +22,13 @@ function Transaction(argObj) {
     }
     var p = argObj.gasPrice;
     var l = argObj.gasLimit;
-    var v = argObj.value;       
-    tx.gasPrice = (p === undefined) ? module.exports.defaults.gasPrice : p;
-    tx.gasLimit = (l === undefined) ? module.exports.defaults.gasLimit : l;
-    tx.value    = (v === undefined) ? module.exports.defaults.value : v;
+    var v = argObj.value;
+    tx.gasPrice = (p === undefined) ?
+        module.exports.defaults.gasPrice : Int(p).valueOf();
+    tx.gasLimit = (l === undefined) ?
+        module.exports.defaults.gasLimit : Int(l).valueOf();
+    tx.value    = (v === undefined) ?
+        module.exports.defaults.value : Int(v).valueOf();
     tx.data     = argObj.data;
 
     return function(privKeyFrom, addressTo) {

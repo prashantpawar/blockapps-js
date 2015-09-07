@@ -113,6 +113,12 @@ requests are made to the BlockApps server and path at:
  - `query.apiPrefix`: by default, `/eth/v1.0`.
  - `query.serverURI`: by default, `http://hacknet.blockapps.net`.
 
+Some of the routes (namely, *faucet* and *submitTransaction*) poll the
+server for their results, with the following parameters:
+
+ - `polling.pollEveryMS`: by default, 500 (milliseconds)
+ - `polling.pollTimeoutMS`: by default, 10000 (milliseconds)
+
 The routes are:
 
  - `routes.solc(code)`: takes Solidity source code and returns a
@@ -233,8 +239,8 @@ Javascript.
       the query is made, of the types given below.  Mappings and
       functions have special syntax.
 
- - **State variables**: Every Solidity is given a corresponding
-     Javascript (or Node.js) type.  They are:
+#### State variables
+Every Solidity is given a corresponding Javascript (or Node.js) type. They are:
    - *address*: the `ethcore.Address` (i.e. Buffer) type, of length 20 bytes.
    - *bool*: the `boolean` type.
    - *bytes* and its variants: the Buffer type of any length
@@ -248,44 +254,48 @@ Javascript.
      names of the fields of the struct, with values equal to the
      representations of the struct fields.
 
- - **Mappings**: These are treated specially in two ways.  First,
-     naturally, a key must be supplied and the corresponding value
-     returned.  Second, a Solidity mapping has no global knowledge of
-     its contents, and thus, the entire mapping cannot be retrieved
-     with a single query.  Therefore, a mapping variable accepts keys
-     and returns promises of individual values, not the promise of an
-     associative array (as might be expected from the description).
-     Each `state.mappingName` is a function having argument and return
-     value:
+#### Mappings
+These are treated specially in two ways.  First, naturally, a key must
+be supplied and the corresponding value returned.  Second, a Solidity
+mapping has no global knowledge of its contents, and thus, the entire
+mapping cannot be retrieved with a single query.  Therefore, a mapping
+variable accepts keys and returns promises of individual values, not
+the promise of an associative array (as might be expected from the
+description).  Each `state.mappingName` is a function having argument
+and return value:
 
    - *argument*: The mapping key, provided as any value that
       represents (as above) or can be converted to the type of the
       mapping key (i.e. hex strings for Addresses).
    - *return value*: a Promise resolving to that value.
 
- - **Functions**: To call a function `state.funcName`, one must pass
-     the arguments and, optionally, the transaction parameters
-     (particularly important if a value transfer is required or the
-     gas limit is notable).  Then, to actually make the call, the
-     private key of the calling account must be provided.  The
-     corresponding properties of `state.funcName` are:
+#### Functions
+A Solidity function `fName` appears as `state.fName` in the
+corresponding contract object.  This is actually a member function
+that takes the arguments of `fName`, either as:
 
-   - *args*: this accepts a single parameter, an object whose
-      enumerable properties are the names of the Solidity function's
-      arguments, and whose values (like those of mapping keys) are
-      apropriate representations of the arguments to be passed.  All
-      arguments must be passed at once.  Returns `state.funcName`,
-      for chaining.
+  - A single object whose enumerable properties are the names of the
+    Solidity function's arguments, and whose values (like those of
+    mapping keys) are apropriate representations of the arguments to
+    be passed.  All arguments must be passed at once.
 
-   - *argList*: this accepts as its own parameters the arguments of
-      the Solidity function.  This is chiefly useful for functions
-      with anonymous or positionally meaningful parameters.  Again,
-      all arguments must be passed at once; this is mutually exclusive
-      with *args*.  Returns `state.funcName`.
+  - Multiple parameters corresponding to the arguments of the Solidity
+    function.  This is chiefly useful for functions with anonymous or
+    positionally meaningful parameters.  Again, all arguments must be
+    passed at once.
 
-   - *txParams*: the optional object `{value, gasPrice, gasLimit}` of
-      transaction parameters.  Returns `state.funcName`.
+The return value of this function has two properties:
 
-   - *callFrom(privKey)*: calls the function from the account with the
-      given private key.  Its return value is a Promise of the return
-      value of the Solidity function, if any.
+  - *txParams*: the optional object `{value, gasPrice, gasLimit}` of
+      transaction parameters.  Returns the same object, now with these
+      parameters remembered.
+
+  - *callFrom(privkey)*: calls the function from the account with the
+     given private key.  Its return value is a Promise of the return
+     value of the Solidity function, if any.
+
+Thus, one calls a solidity function as
+
+```js
+contractObj.state.fName(args|arg1, arg2, ..).[txParams(params)].callFrom(privkey);
+```

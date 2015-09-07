@@ -38,7 +38,7 @@
     "browser-request": "",
     "crypto-js": ">=3.1",
     "enum": "",
-    "ethereumjs-tx": "",
+    "ethereumjs-tx": "0.5.5",
     "ethereumjs-util": "",
     "request": "",
     "string": ""

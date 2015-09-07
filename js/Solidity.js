@@ -19,6 +19,10 @@ var dynamicRow = solidityType.dynamicRow;
 
 module.exports = Solidity;
 function Solidity(code) {
+    if (!(this instanceof Solidity)) {
+        return new Solidity(code);
+    }
+    
     return solc(code).then(function(x) {
         var result = Object.create(Solidity.prototype);
         result.code = code;
@@ -63,10 +67,7 @@ function SolContract(privkey, txParams) {
                 var symRow = symTab[sym];
                 if (!("atStorageKey" in symRow)) {
                     if (symRow["jsType"] === "Function") {
-                        result.state[sym] = solMethod(symRow);
-                        var prop = result.state[sym]
-                        prop.callFrom = prop.callToFrom.bind(prop, newAddr);
-                        delete prop.callToFrom;
+                        result.state[sym] = solMethod(symRow).bind(newAddr);
                     }
                     continue;
                 }
@@ -147,11 +148,15 @@ function makeSolObject(symTab, symRow, storage) {
         }
     case "Array":
         return function () {
+            var symRow1;
             if (isDynamic(symRow)) {
-                symRow = dynamicRow(symRow, storage);
+                symRow1 = dynamicRow(symRow, storage);
+            }
+            else {
+                symRow1 = symRow;
             }
             
-            return Promise.join(symRow, function(symRow) {
+            return Promise.join(symRow1, function(symRow) {
                 var arrElt = symRow["arrayElement"];
                 var eltRow = {};
                 for (var name in arrElt) {

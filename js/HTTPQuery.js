@@ -2,13 +2,18 @@ var Promise = require("bluebird");
 var request = Promise.promisify(require("request"));
 
 module.exports = HTTPQuery;
-module.exports.apiPrefix = "/eth/v1.0";
-module.exports.serverURI = "http://hacknet.blockapps.net";
+
+var defaults = {
+    apiPrefix : "/eth/v1.0",
+    serverURI : "http://hacknet.blockapps.net"
+};
+
+module.exports.defaults = defaults;
 
 function HTTPQuery(queryPath, params) {
     var options = {
-        "uri":module.exports.serverURI + module.exports.apiPrefix + queryPath,
-        "json":true
+        "uri":defaults.serverURI + defaults.apiPrefix + queryPath,
+        "json" : true
     };
     if (Object.keys(params).length != 1) {
         throw "HTTPQuery(_, params): params must have exactly one field, " +
@@ -34,5 +39,8 @@ function HTTPQuery(queryPath, params) {
         break;
     }
 
-    return request(options).spread(function(response, body) {return body});
+    return request(options).
+        catch(SyntaxError, function() {
+            return Promise.resolve([]); // For JSON.parse
+        }).spread(function(response, body) {return body;});
 }
