@@ -2,7 +2,7 @@
 
 ## Contribution Guide
 
-[```blockapps-js```](https://github.com/blockapps/blockapps-js/) the library and its sister project [```bloc```](https://github.com/blockapps/blockapps-js/), the commandline tool, are community driven
+[```blockapps-js```](https://github.com/blockapps/blockapps-js/) the library and its sister project [```bloc```](https://github.com/blockapps/bloc/), the commandline tool, are community driven
 projects. We are eager to accept contributions in the form of:
 
 + App Examples
