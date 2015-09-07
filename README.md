@@ -35,7 +35,117 @@ Aside from Address and Int, all the public methods return promises
 (from the bluebird library).
 
 ### Quick start
-TODO
+
+See the `bulkQuery` sample dApp in the `examples/` directory for a
+complete, working example.  Here are some snippets illustrating common
+operations.
+
+#### Query an account's balance
+
+```js
+var Account = require('blockapps-js').ethbase.Account;
+
+// The "0x" prefix is optional for addresses
+var address = "16ae8aaf39a18a3035c7bf71f14c507eda83d3e3"
+
+Account(address).balance.then(function(balance) {
+  // In here, "balance" is a big-integer you can manipulate directly.
+});
+```
+
+#### Send ether between accounts
+
+```js
+var ethbase = require('blockapps-js').ethbase
+var Transaction = ethbase.Transaction;
+var Int = ethbase.Int;
+
+var addressTo = "16ae8aaf39a18a3035c7bf71f14c507eda83d3e3";
+var privkeyFrom = "1dd885a423f4e212740f116afa66d40aafdbb3a381079150371801871d9ea281";
+
+// This statement doesn't actually send a transaction; it just sets it up.
+var valueTX = Transaction({"value" : Int(10).pow(18)}); // 1 ether
+
+valueTX(privkeyFrom, addressTo).then(function(txResult) {
+  // txResult.message is either "Success!" or an error message
+  // For this transaction, the error would be about insufficient balance.
+});
+```
+
+#### Compile Solidity code
+
+```js
+var Solidity = require('blockapps-js').Solidity
+
+var code = "contract C { int x = -2; }"; // For instance
+
+Solidity(code).then(function(solObj) {
+  // solObj.vmCode is the compiled code.  You could submit it directly with
+  // a Transaction, but there is a better way.
+
+  // solObj.symTab has more information than you could possibly want about the
+  // global variables and functions defined in the code.
+
+  // solObj.name is the name of the contrat, i.e. "C"
+
+  // solObj.code is the code itself.
+}).catch(function(err) {
+  // err is the compiler error if the code is malformed.
+})
+```
+
+#### Create a Solidity contract and read its state
+
+```js
+var Solidity = require('blockapps-js').Solidity
+
+var code = "contract C { int x = -2; }"; // For instance
+var privkey = "1dd885a423f4e212740f116afa66d40aafdbb3a381079150371801871d9ea281";
+
+Solidity(code).newContract(privkey, {"value": 100}).then(function(contract) {
+  contract.account.balance.equals(100); // You shouldn't use == with big-integers
+  contract.state.x == -2; // If you do use ==, the big-integer is downcast.
+});
+```
+
+### Call a Solidity method
+
+```js
+var Solidity = require('blockapps-js').Solidity;
+var Promise = require('bluebird'); // This is the promise library we use
+
+var code = 'contract C {                        \n\
+  uint knocks;                                  \n\
+                                                \n\
+  function knock(uint times) returns (string) { \n\
+    knocks += times;                            \n\
+    if (times == 0) {                           \n\
+      return "I couldn\'t hear that!";          \n\
+    }                                           \n\
+    else {                                      \n\
+      return "Okay, okay!";                     \n\
+    }                                           \n\
+  }                                             \n\
+}';
+
+var privkey = "1dd885a423f4e212740f116afa66d40aafdbb3a381079150371801871d9ea281";
+
+Solidity(code).newContract(privkey).then(function(contract) {
+  // This sets up a call to the code's "knock" method;
+  // The account owned by this private key pays the execution fees.
+  var knock = function(n) {
+    return contract.state.knock(n).callFrom(privkey);
+  };
+  
+  Promise.map([0,1,2,3], knock).then(function(replies) {
+    replies[0] == "I couldn't hear that!";
+    replies[1] == "Okay, okay!";
+    // etc.
+  }).then(function() {
+    contract.state.knocks == 6; 
+  });
+});
+```
 
 ## API details
 
@@ -223,24 +333,27 @@ Javascript.
    - *code*: the constructing code.
    - *name*: the Solidity contract name.
    - *vmCode*: the compiled bytecode.
-   - *symTab*: the storage layout and type "symbol table" of functions and variables
-   - *newContract(privkey, [txParams])*: submits a contract creation transaction for
-      the *vmCode* with the optional parameters (subject to
-      `ethcore.Transaction.defaults`) as well as the *required* parameter
-      *privkey*.  This returns the promise of a "contract object" described next.
+   - *symTab*: the storage layout and type "symbol table" of functions
+      and variables
+   - *newContract(privkey, [txParams])*: submits a contract creation
+      transaction for the *vmCode* with the optional parameters
+      (subject to `ethcore.Transaction.defaults`) as well as the
+      *required* parameter *privkey*.  This returns the promise of a
+      "contract object" described next.
 
  - The contract object has as its prototype the Solidity object that
    created it, as well as the following properties:
 
    - *account*: the `ethcore.Account` object for its address
-   - *state*: an object containing as properties every state variable and top-level
-      function in the Solidity code.  The value of `state.varName` is
-      a Promise resolving to the value of that variable at the time
-      the query is made, of the types given below.  Mappings and
-      functions have special syntax.
+   - *state*: an object containing as properties every state variable
+      and top-level function in the Solidity code.  The value of
+      `state.varName` is a Promise resolving to the value of that
+      variable at the time the query is made, of the types given
+      below.  Mappings and functions have special syntax.
 
 #### State variables
-Every Solidity is given a corresponding Javascript (or Node.js) type. They are:
+Every Solidity type is given a corresponding Javascript (or Node.js)
+type. They are:
    - *address*: the `ethcore.Address` (i.e. Buffer) type, of length 20 bytes.
    - *bool*: the `boolean` type.
    - *bytes* and its variants: the Buffer type of any length
@@ -284,10 +397,10 @@ that takes the arguments of `fName`, either as:
     positionally meaningful parameters.  Again, all arguments must be
     passed at once.
 
-The return value of this function has two properties:
+The return value of this function has two methods:
 
-  - *txParams*: the optional object `{value, gasPrice, gasLimit}` of
-      transaction parameters.  Returns the same object, now with these
+  - *txParams(params)*: takes optional transaction parameters `{value,
+      gasPrice, gasLimit}`.  Returns the same object, now with these
       parameters remembered.
 
   - *callFrom(privkey)*: calls the function from the account with the
@@ -297,5 +410,5 @@ The return value of this function has two properties:
 Thus, one calls a solidity function as
 
 ```js
-contractObj.state.fName(args|arg1, arg2, ..).[txParams(params)].callFrom(privkey);
+contractObj.state.fName(args|arg1, arg2, ..)[   .txParams(params)].callFrom(privkey);
 ```
