@@ -24,8 +24,9 @@
     "url": "http://blockapps.net"
   },
   "files": [
-    "js/",
-    "api-node.js"
+      "js/",
+      "index.js",
+      "mkbrowser.sh"
   ],
   "main": "api-node",
   "repository": {
