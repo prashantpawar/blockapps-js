@@ -62,7 +62,7 @@ function SolContract(privkey, txParams) {
 
 module.exports.attach = attach;
 function attach(metadata) {
-    var error = "Can only attach an ethereum account to objects " +
+    var error = "Can only attach an Ethereum account to objects " +
         "{code, name, vmCode, symTab, [address]}";
 
     if (!(metadata instanceof Object)) {
@@ -70,14 +70,14 @@ function attach(metadata) {
     }
     
     var solObj = Object.create(Solidity.prototype);
-    for (name in ["code", "name", "vmCode", "symTab"]) {
+    ["code", "name", "vmCode", "symTab"].forEach(function(name){
         if (name in metadata) {
             solObj[name] = metadata[name];
         }
         else {
             throw error;
         }
-    }
+    });
 
     var numProps = Object.keys(metadata).length;
     if (numProps === 4) {
