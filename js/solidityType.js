@@ -65,7 +65,8 @@ function callFrom(from) {
         throw "Solidity function call: must invoke .args|.argsList first";
     }
     this._params.data = this._data;
-    return Transaction(this._params)(from, this._to).get("response").
+    return Transaction(this._params)(from, this._to).
+        get("response").
         then(decodeReturn.bind(null, this._ret));
 }
 

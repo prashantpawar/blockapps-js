@@ -351,6 +351,33 @@ Javascript.
       variable at the time the query is made, of the types given
       below.  Mappings and functions have special syntax.
 
+Finally, it is possible to "attach" some metadata to a Solidity or
+contract object.  This facilitates recording and reloading these
+objects between sessions without creating new Ethereum contracts or
+even recompiling.
+
+  - `Solidity.attach({code, name, vmCode, symTab[, address]})`: given
+    the metadata in the argument, create either a Solidity or contract
+    object with this data.  More specifically:
+
+    - If `address` is absent, a Solidity object is returned.  This
+      object is equivalent to `Solidity(code)` with the other
+      properties set to the values in the argument; no check is
+      performed that these values are actually correct.  The only way
+      you should use this is by the equivalent of
+      `Solidity.attach(JSON.stringify(solObj))`, as it avoids
+      recompilation.
+
+    - If `address` is present, a contract object is returned.  This is
+      the same as performing `Solidity(code).newContract(???)`, except
+      that no private key is necessary and the resulting object's
+      `account` member has address equal to `address`.  No check is
+      performed that this address actually exists or has the Solidity
+      ABI indicated by the other parameters.  It simply allows
+      resuming work with a contract object previously created directly
+      by `newContract`. (Note that `JSON.stringify(contractObj)` does
+      not have the correct format to submit to `Solidity.attach`.)
+
 #### State variables
 Every Solidity type is given a corresponding Javascript (or Node.js)
 type. They are:

@@ -4,7 +4,7 @@ var Address = require("./Address.js");
 var Int = require("./Int.js");
 var Transaction = require("./Transaction.js");
 var Storage = require("./Storage.js");
-var EthWord = require("./Storage.js").Word;
+var EthWord = Storage.Word;
 var sha3 = require("./Crypto").sha3;
 var Promise = require('bluebird');
 var nodeEnum = require('enum');
@@ -40,7 +40,7 @@ Solidity.prototype = {
     "vmCode" : null,
     "symTab" : null,
     "constructor" : Solidity,
-    "newContract" : SolContract
+    "newContract" : SolContract,
 };
 
 // txParams = {value, gasPrice, gasLimit} privkey
@@ -51,35 +51,69 @@ function SolContract(privkey, txParams) {
     }
     txParams.data = this.vmCode;
     return Transaction(txParams)(privkey, null).get("contractsCreated").
-        then(function(addrList){
+        tap(function(addrList){
             if (addrList.length !== 1) {
                 throw "code must create one and only one account";
             }
-            
-            var newAddr = Address(addrList[0]);
-            var storage = new Storage(newAddr);
-            var result = Object.create(solObj);
-            result.state = {};
-            result.account = new Account(newAddr);
-
-            var symTab = solObj.symTab;
-            for (var sym in symTab) {
-                var symRow = symTab[sym];
-                if (!("atStorageKey" in symRow)) {
-                    if (symRow["jsType"] === "Function") {
-                        result.state[sym] = solMethod(symRow).bind(newAddr);
-                    }
-                    continue;
-                }
-                
-                Object.defineProperty(result.state, sym, {
-                    get : makeSolObject(symTab, symRow, storage),
-                    enumerable: true
-                });
-            }
-            return result;
+        }).get(0).then(Address).then(function(newAddr) {
+            return makeState(solObj, newAddr);
         });
 };
+
+module.exports.attach = attach;
+function attach(metadata) {
+    var error = "Can only attach an ethereum account to objects " +
+        "{code, name, vmCode, symTab, [address]}";
+
+    if (!(metadata instanceof Object)) {
+        throw error;
+    }
+    
+    var solObj = Object.create(Solidity.prototype);
+    for (name in ["code", "name", "vmCode", "symTab"]) {
+        if (name in metadata) {
+            solObj[name] = metadata[name];
+        }
+        else {
+            throw error;
+        }
+    }
+
+    var numProps = Object.keys(metadata).length;
+    if (numProps === 4) {
+        return solObj;
+    }
+
+    if (!(numProps === 5 && "address" in metadata)) {
+        throw error;
+    }
+
+    return makeState(solObj, metadata.address);
+}
+
+function makeState(solObj, newAddr) {
+    var storage = new Storage(newAddr);
+    var result = Object.create(solObj);
+    result.state = {};
+    result.account = new Account(newAddr);
+
+    var symTab = solObj.symTab;
+    for (var sym in symTab) {
+        var symRow = symTab[sym];
+        if (!("atStorageKey" in symRow)) {
+            if (symRow["jsType"] === "Function") {
+                result.state[sym] = solMethod(symRow).bind(newAddr);
+            }
+            continue;
+        }
+        
+        Object.defineProperty(result.state, sym, {
+            get : makeSolObject(symTab, symRow, storage),
+            enumerable: true
+        });
+    }
+    return result;
+}
 
 function makeSolObject(symTab, symRow, storage) {
     switch (symRow["jsType"]) {
