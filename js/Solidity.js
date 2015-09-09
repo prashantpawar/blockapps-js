@@ -102,7 +102,7 @@ function makeState(solObj, newAddr) {
         var symRow = symTab[sym];
         if (!("atStorageKey" in symRow)) {
             if (symRow["jsType"] === "Function") {
-                result.state[sym] = solMethod(symRow).bind(newAddr);
+                result.state[sym] = solMethod(sym, symRow).bind(result.account.address);
             }
             continue;
         }

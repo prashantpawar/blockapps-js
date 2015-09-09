@@ -9,7 +9,7 @@ var Promise = require('bluebird');
  */
 
 module.exports.solMethod = solMethod;
-function solMethod(symRow) {
+function solMethod(sym, symRow) {
     var fArgs = symRow["functionArgs"];
     var fDomain = symRow["functionDomain"];
     var fRet = symRow["functionReturns"];
