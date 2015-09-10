@@ -1,45 +1,46 @@
-var request = require("request");
+var Promise = require("bluebird");
+var request = Promise.promisify(require("request"));
 
 module.exports = HTTPQuery;
 
-// blockappsQueryObj = {
-//   serverURI: <blockapps node address>
-//   queryPath: <blockapps query route>
-//   callback : <function to handle the JSON-parsed reply>
-//   get|post : <list of {name:,value:} query parameters>
-// }
+var defaults = {
+    apiPrefix : "/eth/v1.0",
+    serverURI : "http://hacknet.blockapps.net"
+};
 
-function HTTPQuery(blockappsQueryObj) {
-    var apiPrefix = "/eth/v1.0"
-    
+module.exports.defaults = defaults;
+
+function HTTPQuery(queryPath, params) {
     var options = {
-        "uri":blockappsQueryObj.serverURI + apiPrefix + blockappsQueryObj.queryPath,
-        "json":true
+        "uri":defaults.serverURI + defaults.apiPrefix + queryPath,
+        "json" : true
     };
-    if (blockappsQueryObj["get"]) {
+    if (Object.keys(params).length != 1) {
+        throw "HTTPQuery(_, params): params must have exactly one field, " +
+            "the method get|post|data";
+    }
+    var method = Object.keys(params)[0];
+    switch (method) {
+    case "get":
         options.method = "GET";
-        options.qs = blockappsQueryObj.get;
-    }
-    else if (blockappsQueryObj["post"]) {
+        options.qs = params.get;
+        break;
+    case "post":
         options.method = "POST";
-        options.form = blockappsQueryObj.post;
-    }
-    else if (blockappsQueryObj["data"]) {
+        options.form = params.post;
+        break;
+    case "data":
         options.method = "POST";
-        options.body = blockappsQueryObj.data;
-    }
-    
-    function httpCallback(error, response, body) {
-        if(response && response.statusCode == 200) {
-            if (typeof blockappsQueryObj.callback === "function") {
-                blockappsQueryObj.callback(body);
-            }
-        }
-        else {
-            console.log(error);
-        }
+        options.body = params.data;
+        break;
+    default:
+        throw "HTTPQuery(_, params): params must be of the form " +
+            "{get|post|data: {<name>: <value>, ..} }";
+        break;
     }
 
-    console.log(options);
-    request(options, httpCallback);
+    return request(options).
+        catch(SyntaxError, function() {
+            return Promise.resolve([]); // For JSON.parse
+        }).spread(function(response, body) {return body;});
 }

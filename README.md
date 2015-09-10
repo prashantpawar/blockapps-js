@@ -1,5 +1,7 @@
 # blockapps-js
 
+[![Build Status](https://travis-ci.org/blockapps/blockapps-js.svg)](https://travis-ci.org/blockapps/blockapps-js)
+
 blockapps-js is a library that exposes a number of functions for
 interacting with the Blockchain via the BlockApps API.  Currently it
 has strong support for compiling Solidity code, creating the resulting
@@ -21,245 +23,419 @@ All functionality is included in the `blockapps-js` module:
 
 ```js
 var blockapps = require('blockapps-js');
+/* blockapps = {
+ *   ethbase : { Account, Address, Int, Storage, Transaction },
+ *   routes,
+ *   Solidity
+ * }
 ```
 
-Many functions, in fact any that require interacting directly with the
-blockchain, take an `apiURL` parameter and a `callback` parameter.
-
-The `apiURL` names a Blockapps node where the query is made, and can
-be "" for the local machine, if it is running such a node.  The choice
-of this URL is of minor effect, except for the usual network latency
-issues and the possibility that different nodes may be at different
-degrees of synchronicity with the Ethereum network.
-
-The `callback` is run on various appropriate response values when the
-query is complete.  In the future we will also provide promises from
-these methods, for finer control over success and failure of the
-query.
+The various submodules of blockapps are described in detail below.
+Aside from Address and Int, all the public methods return promises
+(from the bluebird library).
 
 ### Quick start
 
-It is virtually certain that you want to start using this library in
-the following way:
+See the `bulkQuery` sample dApp in the `examples/` directory for a
+complete, working example.  Here are some snippets illustrating common
+operations.
 
-```
-// Say your document has text fields with these IDs
-var privkey = document.getElementById('privkey');
-var code = document.getElementById('code');
+#### Query an account's balance
 
-// This should be whatever Blockapps node you like
-var apiURL = "http://localhost:3000";
+```js
+var Account = require('blockapps-js').ethbase.Account;
 
-// This should be an action for some user event, say a button press
-function submitCode() {
-    // Constructs a Solidity code object
-    api.Solidity(code.value).toContract({ // Makes a contract from it
-        apiURL:apiURL,
-        fromAccount:api.Contract({privkey: privkey.value}),
-        value:0,
-        gasPrice:1,
-        gasLimit:3141592,
-    }, displayContract ) // Does this with the contract
-}
+// The "0x" prefix is optional for addresses
+var address = "16ae8aaf39a18a3035c7bf71f14c507eda83d3e3"
 
-function displayContract(contract) {
-    // The actual display is a callback to sync()
-    function addToAbidata() {
-        // This is a pretty boring way to use a contract,
-        // but illustrates how to use it to query the state variables.
-        abidata.value = "Balance: " + contract.balance;
-        abidata.value += "\n\nContract state variables:"
-        for (var sym in contract.get) {
-            val = contract.get[sym]
-            abidata.value += "\n" + sym + " = " + val;
-            if (val.isMapping) {
-                abidata.value += " : 1729 => " + val(api.Types.Int(1729));
-            }
-        }
-    }
-
-    // You have to sync before you can read the state.
-    contract.sync("", addToAbidata);
-}
+Account(address).balance.then(function(balance) {
+  // In here, "balance" is a big-integer you can manipulate directly.
+});
 ```
 
-### Contracts
+#### Send ether between accounts
 
-The `Contract` object is the hub of the API.  Its fields and methods
-mirror the structure of an Ethereum contract.  There are three
-subtypes of `Contract`, but a user would only create two of them directly:
+```js
+var ethbase = require('blockapps-js').ethbase
+var Transaction = ethbase.Transaction;
+var Int = ethbase.Int;
 
-* User account: `var account = Contract({ privkey: <hexString> });` a
-human possessing a certain amount of ether.  It can send any
-transaction, or receive value tranfers.
-  * `account.address`: the account's Ethereum address, derived from
-    the private key.
-  * `account.balance`: the account's quantity of ether.
-  * `account.nonce`: the account's nonce (number of valid transactions sent).
-  * `account.sync(apiURL, callback)`: fetches the current balance and
-    nonce from the Blockapps node at`apiURL`, then runs `callback()`.
-* Null contract: `var nullContract = Contract();` used in
-contract-creation transactions: sending a transaction to
-`nullContract` turns it into a contract creation rather than a
-message.
+var addressTo = "16ae8aaf39a18a3035c7bf71f14c507eda83d3e3";
+var privkeyFrom = "1dd885a423f4e212740f116afa66d40aafdbb3a381079150371801871d9ea281";
 
-The third, most featureful type of contract is constructed from
-Solidity code, as described below.  It has the following structure.
+// This statement doesn't actually send a transaction; it just sets it up.
+var valueTX = Transaction({"value" : Int(10).pow(18)}); // 1 ether
 
-* Solidity contract: `var contract = Contract({address: 0x<20 bytes>,
-  symtab: <symtab>})`.  This object mirrors the syntactic declarations
-  of the Solidity code that it was constructed from.
-  * `contract.address`: the Ethereum address, passed in the
-    constructor (determined from the creating account's address and
-    nonce).
-  * `contract.balance`: the ether quantity held by this contract.
-  * `contract.nonce`: the nonce of this contract.
-  * `contract.sync(apiURL, callback)`: queries the Blockapps node at
-    `apiURL` for the nonce, balance, and current storage contents of
-    the contract,, thus updating the values of all variables, then
-    calls `callback()`.
-  * `contract.get(apiURL, callback, varName)`: first synchronizes as
-    above, then calls `callback` on the value of variable called
-    `varName` in the Solidity source code.
-    * `contract.get[varName]`: directly returns the value of
-      `varName`, current as of the last call to `contract.sync` or
-      `contract.get`, but does *not* update the storage.
-  * `contract.call(apiURL, callback, { funcName:<string>,
-    fromAccount:<Contract>, value:<ether amount>, gasPrice:<ether
-    amount>, gasLimit:<ether amount> }, args)`: if `funcName` is the
-    name of a function defined in the Solidity source, this sends a
-    message transaction "calling" that function on the arguments
-    `args`, with the parameters given.  It then calls
-    `callback(<retVal>)` on the function's return value, if any.
-    * `contract.call[funcName]`: the Javascript function `f`
-      accomplishing the above, which is equivalent to `f(apiURL,
-      callback, argObj, args..)`, where `argObj` is the object passed
-      to `contract.callFunc`.
+valueTX(privkeyFrom, addressTo).then(function(txResult) {
+  // txResult.message is either "Success!" or an error message
+  // For this transaction, the error would be about insufficient balance.
+});
+```
 
-Function calls have the following syntax:
+#### Compile Solidity code
 
-    funcName({arg: argValue, ...})
+```js
+var Solidity = require('blockapps-js').Solidity
 
-where `arg` runs through the names of the arguments to the Solidity
-function.  Currently, unnamed arguments are not supported.  The values
-`argValue` may be Javascript objects of an appropriate type and will
-be cast to the Solidity types internally.  The calls return Solidity
-types described in the Types section below.
+var code = "contract C { int x = -2; }"; // For instance
 
-### Solidity
+Solidity(code).then(function(solObj) {
+  // solObj.vmCode is the compiled code.  You could submit it directly with
+  // a Transaction, but there is a better way.
 
-The `Solidity` object manipulates code in the Ethereum domain-specific
-language Solidity.
+  // solObj.symTab has more information than you could possibly want about the
+  // global variables and functions defined in the code.
 
-* `var solCode = Solidity(<code>);` initializes the object.
-  * `solCode.code`: the `<code>` originally passed.
-  * `solCode.vmCode`: the compiled EVM bytecode, initially `undefined`.
-  * `solCode.symtab`: the "symbol table" of the Solidity code.  This
-    records all top-level declarations of types, functions, and
-    variables, including all contracts it defines.  It assigns a
-    memory layout to the variables in compliance with the Solidity
-    conventions (see the
-    [Solidity tutorial](https://github.com/ethereum/wiki/wiki/Solidity-Tutorial#layout-of-state-variables-in-storage))
-    and records their types.  Normally, a user should not need to know
-    the details of this data structure.
-  * `solCode.compile(apiURL, callback)`: compiles the code and stores
-    its EVM bytecode and symbol table, then calls `callback(solCode)`.
-  * `solCode.submit({apiURL:<URL>, fromAccount:<Contract>,
-    value:<ether amount>, gasPrice:<ether amount>, gasLimit:<ether
-    amount>}, callback)`: submits the code to the Blockapps node at
-    `apiURL` (thus, creating the contracts defined in it), which
-    produces a contract at some `address`, and calls
-    `callback(address)`.  The remaining parameters in the argument
-    object determine the details of this transaction.
-  * `solCode.toContract(argObj, callback)`: does both of the above in
-    one operation, as well as constructing a Contract object
-    `contract`, then calls `callback(contract)`, with `argObj` being
-    the same as in `solCode.submit`.
+  // solObj.name is the name of the contrat, i.e. "C"
 
-### Transaction
+  // solObj.code is the code itself.
+}).catch(function(err) {
+  // err is the compiler error if the code is malformed.
+})
+```
 
-The `Transaction` object represents an Ethereum transaction between
-two accounts or contracts.  Its constructor takes the parameters
-required by Ethereum, except for the nonce and the cryptographic
-fields.
+#### Create a Solidity contract and read its state
 
-* `var tx = Transaction({ fromAccount: <Contract>, toAccount:
-  <Contract>, data: <hex string>, value: <ether amount>, gasPrice:
-  <ether amount>, gasLimit: <ether amount> });` creates an object but
-  does not send the transaction.
-  * `tx.from`: equal to `fromAccount.address`
-  * `tx.to`: if `toAccount` is not the null contract, is equal to
-    `toAccount.address`.
-  * `tx.codeOrData`: equal to `data`.  In the case of a message
-    transaction, this typically encodes a call to a Solidity function
-    (and is constructed by `toAccount.call`, described above).  In the
-    case of contract creation, when `toAccount` is the null contract,
-    it represents the code that creates the new contract (and is
-    constructed by `solCode.compile`).
-  * `tx.value`, `tx.gasPrice`, `tx.gasLimit`: are as given in the constructor.
-  * `tx.nonce`: initially `undefined`.  The nonce of `fromAccount` at
-    the time the transaction is sent.
-  * `tx.r`, `tx.s`, `tx.v`, `tx.hash`: the cryptographic data constituting
-    the transaction's signature.  Constructing this data requires the
-    `fromAccount` be an account rather than a Solidity contract, as it
-    needs to have a private key.
-  * `tx.send(apiURL, callback)`: posts the contract to the Blockapps
-    node at `apiURL`, waits for it to be mined on the Ethereum
-    network, and calls `callback(tx)` when this is done.  Further queries to
-    Blockapps can be done using `tx.hash` via the
-    `/transactionResult/<hash>` route.  This API provides the two most
-    useful, however, so this call need not be made unless transferring
-    value directly.
-  * `tx.contractCreated(apiURL, callback)`: queries the Blockapps node
-    at `apiURL` for the `address` (as type `Address`) created by a
-    contract-creation transaction, and calls `callback(address)`.
-    Currently, we do not support Solidity code that creates multiple
-    contracts simultaneously.
+```js
+var Solidity = require('blockapps-js').Solidity
 
-### Internal
+var code = "contract C { int x = -2; }"; // For instance
+var privkey = "1dd885a423f4e212740f116afa66d40aafdbb3a381079150371801871d9ea281";
 
-The Internal object has four members but is not intendend to be used
-normally.
+Solidity(code).newContract(privkey, {"value": 100}).then(function(contract) {
+  contract.account.balance.equals(100); // You shouldn't use == with big-integers
+  contract.state.x == -2; // If you do use ==, the big-integer is downcast.
+});
+```
 
-* `Storage`, which abstracts the Ethereum VM storage.
-* `EthWord`, which abstracts Ethereum's 256-bit words.
-* `Crypto`, which contains the `sha3` hash function used by Ethereum
-(and, eventually, others).
-* `Types`, below.
+### Call a Solidity method
 
-### Types
+```js
+var Solidity = require('blockapps-js').Solidity;
+var Promise = require('bluebird'); // This is the promise library we use
 
-This section provides a little more detail on the values returned by
-storage queries, but its technical details are not important for
-normal use.
+var code = 'contract C {                        \n\
+  uint knocks;                                  \n\
+                                                \n\
+  function knock(uint times) returns (string) { \n\
+    knocks += times;                            \n\
+    if (times == 0) {                           \n\
+      return "I couldn\'t hear that!";          \n\
+    }                                           \n\
+    else {                                      \n\
+      return "Okay, okay!";                     \n\
+    }                                           \n\
+  }                                             \n\
+}';
 
-The `Types` object aggregates the types available in Solidity, exposed
-as Javascript types.  Each of these has the following standard properties:
+var privkey = "1dd885a423f4e212740f116afa66d40aafdbb3a381079150371801871d9ea281";
 
-* `encoding()`: renders the object as a byte string as required by the [Ethereum Contract ABI](https://github.com/ethereum/wiki/wiki/Ethereum-Contract-ABI).
-* `toString()`: renders the object as a human-friendly string.
-* `toJSON()`: renders the object as JSON.
-* `isFixed`: whether the object represents a Solidity type of fixed
-  size (i.e. `uint32`, `bytes8[10]`) or not (i.e. `string`, `int[]`).
+Solidity(code).newContract(privkey).then(function(contract) {
+  // This sets up a call to the code's "knock" method;
+  // The account owned by this private key pays the execution fees.
+  var knock = function(n) {
+    return contract.state.knock(n).callFrom(privkey);
+  };
+  
+  Promise.map([0,1,2,3], knock).then(function(replies) {
+    replies[0] == "I couldn't hear that!";
+    replies[1] == "Okay, okay!";
+    // etc.
+  }).then(function() {
+    contract.state.knocks == 6; 
+  });
+});
+```
 
-The types are:
+## API details
 
-* `Address`, which is a
-  [`Buffer` type](https://nodejs.org/api/buffer.html).
-* `Array` which is a Javascript array containing various Solidity
-  types.
-* `Bool`, which is a Javascript boolean.
-* `Bytes`, which is also a `Buffer`.
-* `Enum`, which is an
-  [`enum` type](https://www.npmjs.com/package/enum).  Values of `Enum`
-  type are actually vlues of `enum`, and the actual enumeration tpe is
-  not available.
-* `Int`, which is a
-  [`big-integer` type](https://www.npmjs.com/package/big-integer).
-* `Mapping`, which is just a Javascript taking arguments and returning
-  values in Javascript of the same types (from among those given here)
-  as the mapping in Solidity.
-* `String`, which is a [Node.js `string` type](http://stringjs.com/)
-  rather than the Javascript String.
-* `Struct`, whih is a Javascript Object whose enumerable properties
-  are those of the Solidity type.
+The `blockapps-js` library has three main submodules.
+
+### The `ethbase` submodule
+
+This component provides Javascript support for the basic concepts of
+Ethereum, independent of high-level languages or implementation
+features.
+
+ - `ethbase.Int`: The constructor for an abstraction of Ethereum's
+   32-byte words, which are implemented via the `big-integer` library.
+   The constructor accepts numbers or Ints, 0x(hex) strings, decimal
+   strings, or Buffers, but does not truncate to 32 bytes.  Note that
+   arithmetic must be performed with the `.plus` (etc.) methods rather
+   than the arithmetic operators, which degrade big integers to 8-byte
+   (floating-point) Javascript numbers.
+
+ - `ethbase.Address`: The constructor for Ethereum "addresses"
+   (20-byte words), which are implemented as the Buffer type.  Its
+   argument can be a number, an Int, a hex string, or another Buffer,
+   all of which are truncated to 20 bytes.
+
+ - `ethbase.Account`: This constructor accepts an argument convertible
+   to Address and defines an object with three properties.
+
+   - `address`: the account's constructing address.
+
+   - `nonce`: the "nonce", or number of successful transactions sent
+     from this account.  The value of this property is a Promise
+     resolving to the Int value of the nonce.
+
+   - `balance`: the balance, in "wei", of the account.  The value of
+     this property is a Promise resolving to the Int value of the
+     balance.  Note that 1 ether is equal to 1e18 wei.
+
+ - `ethbase.Storage`: The constructor for the key-value storage
+   associated with an address.  It accepts an argument convertible to
+   address and returns an object with the following methods:
+
+   - `getSubKey(key, start, size)`: fetches the `size` (number) bytes
+     at storage key `key` (hex string) starting `start` (number) bytes
+     in.  It returns a Promise resolving to the Buffer of these bytes.
+
+   - `getKeyRange(start, itemsNum)`: fetches `itemsNum` (number) keys
+     beginning at `start` (hex string) in a single contiguous Buffer.
+     It returns a Promise resolving to this Buffer.
+
+ - `ethbase.Storage.Word`: a constructor accepting hex strings,
+   numbers, or Ints and encoding them into 32-byte Buffers.  It throws
+   an exception if the input is too long.
+
+ - `ethbase.Transaction`: a constructor for Ethereum transactions.  `blockapps-js` abstracts a transaction into two parts:
+
+   - *parameters*: The argument to Transaction is an object with up to
+      three members: `value`, `gasPrice`, and `gasLimit`, all numbers.
+      Their defaults are provided in `ethbase.Transaction.defaults` as
+      respectively 0, 1, and 3141592.
+
+   - *participants*: A call to `ethbase.Transaction` returns a
+      function with two arguments, respectively a private key (hex
+      string) and Address, denoting the sender and recipient of the
+      transaction.  Calling this function sends the transaction and
+      returns a Promise resolving to the transaction result (see the
+      "routes" section).
+
+### The `routes` submodule
+
+This submodule exports Javascript interfaces to the BlockApps web
+routes for querying the Ethereum "database".  All of them return
+Promises, since they must perform an asychronous request.  These
+requests are made to the BlockApps server and path at:
+
+ - `query.apiPrefix`: by default, `/eth/v1.0`.
+ - `query.serverURI`: by default, `http://hacknet.blockapps.net`.
+
+Some of the routes (namely, *faucet* and *submitTransaction*) poll the
+server for their results, with the following parameters:
+
+ - `polling.pollEveryMS`: by default, 500 (milliseconds)
+ - `polling.pollTimeoutMS`: by default, 10000 (milliseconds)
+
+The routes are:
+
+ - `routes.solc(code)`: takes Solidity source code and returns a
+   Promise resolving to an object `{vmCode, symTab, name}`, where
+   `vmCode` is the compiled Ethereum VM opcodes, `name` is the name of
+   the Solidity contract (currently, only code defining a single
+   contract is supported), and `symTab` is an object containing
+   storage layout and type information for all state variables and
+   functions in the source.  Normally you will not need to use this
+   object.
+
+ - `routes.extabi(code)`: like `solc`, but returns only the symTab directly.
+
+ - `routes.faucet(address)`: takes an argument convertible to Address
+   and supplies it with 1000 ether.  This is available only on the
+   BlockApps hacknet, for obvious reasons.
+
+ - `routes.block(blockQueryObj)`: queries the block database,
+   returning a list of Ethereum blocks as Javascript objects.  The
+   following queries are allowed, and may be combined:
+
+   - *ntx* : number of transactions in the block
+   - *number* : block number; *minnumber*, *maxnumber*: range for *number*
+   - *gaslim* : gas limit for the block; *mingaslim*, *maxgaslim*:
+      range for *gaslim*
+   - *gasused* : total gas used in the block; *mingasused*,
+      *maxgasused*: range for *gasused*
+   - *diff* : block difficulty (the basic mining parameter); *mindiff*,
+      *maxdiff*: range for *diff*
+   - *txaddress*: matches any block containing any transaction either
+      from or to the given address.
+   - *coinbase*: the address of the "coinbase"; i.e. the address mining the block.
+   - *address*: matches any block in which the account at this address is present.
+   - *hash*: the block hash
+
+ - `routes.blockLast(n)`: returns the last *n* blocks in the database.
+
+ - `routes.account(accountQueryObj)`, like `routes.block`, but queries
+   accounts.  Its queries are:
+
+   - *balance*, *minbalance*, *maxbalance*: queries the account balance
+   - *nonce*, *minnonce*, *maxnonce*: queries the account nonce
+   - *address*: the account address
+
+ - `routes.accountAddress(address)`: a shortcut to
+   `routes.account({"address" : address})` returning a single Ethereum
+   account object (*not* an `ethcore.Account`) rather than a list.
+
+ - `routes.transaction(transactionQueryObj)`: like `routes.block`, but
+   queries transactions.  Its queries are:
+
+   - *from*, *to*, *address*: matches transactions from, to, or either
+      a particular address.
+   - *hash*: the transaction hash.
+   - *gasprice*, *mingasprice*, *maxgasprice*: the gas price of a transaction.
+   - *gaslimit*, *mingaslimit*, *maxgaslimit*: the gas limit of a transaction.
+   - *value*, *minvalue*, *maxvalue*: the value sent with the transaction.
+   - *blocknumber*: the block number containing this transaction.
+
+ - `routes.transactionLast(n)`: returns a list of the last *n*
+   transactions received by the client operating the database.
+
+ - `routes.submitTransaction(txObj)`: this is the low-level interface
+   for the `ethcore.Transaction` object.  It accepts an object
+   containing precisely the following fields, and returns a Promise
+   resolving to "transaction result" object with fields summarizing
+   the VM execution.  The Transaction and Solidity objects (below)
+   handle the most useful cases, so when using this route directly,
+   the most important fact about the transaction result is that its
+   presence indicates success.
+
+   - *nonce*, *gasPrice*, *gasLimit*: numbers.
+   - *value*: a number encoded in base 10.
+   - *codeOrData*, *from*, *to*: hex strings, the latter two addresses.
+   - *r*, *s*, *v*, *hash*: cryptographic signature of the other parts.
+
+ - `routes.storage(storageQueryObj)`: like `routes.block`, but queries
+   storage.  It accepts the following queries:
+
+   - *key*, *minkey*, *maxkey*: queries storage "keys", i.e. locations
+      in memory. These are base-10 integer strings.
+   - *keystring*, *keyhex*: alternative formats for key accepting
+      UTF-8 strings or hex strings to denote the key.  They do not
+      have corresponding ranges.
+   - *value*, *minvalue*, *maxvalue*: base-10 storage values.
+   - *valuestring*: alternative format as a UTF-8 string.
+   - *address*: limits the storage to a particular address.  This is
+      virtually required.
+
+ - `routes.storageAddress(address)`: gets all storage from *address*.
+
+### The `Solidity` submodule
+
+This submodule is the interface to the Solidity language, allowing
+source code to be transformed into Ethereum contracts and these
+contracts' states queried and methods invoked directly from
+Javascript.
+
+ - `Solidity(code)`: effectively an interface to `routes.solc`, it
+   returns a Promise of an object with the following prototype:
+
+   - *code*: the constructing code.
+   - *name*: the Solidity contract name.
+   - *vmCode*: the compiled bytecode.
+   - *symTab*: the storage layout and type "symbol table" of functions
+      and variables
+   - *newContract(privkey, [txParams])*: submits a contract creation
+      transaction for the *vmCode* with the optional parameters
+      (subject to `ethcore.Transaction.defaults`) as well as the
+      *required* parameter *privkey*.  This returns the promise of a
+      "contract object" described next.
+
+ - The contract object has as its prototype the Solidity object that
+   created it, as well as the following properties:
+
+   - *account*: the `ethcore.Account` object for its address
+   - *state*: an object containing as properties every state variable
+      and top-level function in the Solidity code.  The value of
+      `state.varName` is a Promise resolving to the value of that
+      variable at the time the query is made, of the types given
+      below.  Mappings and functions have special syntax.
+
+Finally, it is possible to "attach" some metadata to a Solidity or
+contract object.  This facilitates recording and reloading these
+objects between sessions without creating new Ethereum contracts or
+even recompiling.
+
+  - `Solidity.attach({code, name, vmCode, symTab[, address]})`: given
+    the metadata in the argument, create either a Solidity or contract
+    object with this data.  More specifically:
+
+    - If `address` is absent, a Solidity object is returned.  This
+      object is equivalent to `Solidity(code)` with the other
+      properties set to the values in the argument; no check is
+      performed that these values are actually correct.  The only way
+      you should use this is by the equivalent of
+      `Solidity.attach(JSON.stringify(solObj))`, as it avoids
+      recompilation.
+
+    - If `address` is present, a contract object is returned.  This is
+      the same as performing `Solidity(code).newContract(???)`, except
+      that no private key is necessary and the resulting object's
+      `account` member has address equal to `address`.  No check is
+      performed that this address actually exists or has the Solidity
+      ABI indicated by the other parameters.  It simply allows
+      resuming work with a contract object previously created directly
+      by `newContract`. (Note that `JSON.stringify(contractObj)` does
+      not have the correct format to submit to `Solidity.attach`.)
+
+#### State variables
+Every Solidity type is given a corresponding Javascript (or Node.js)
+type. They are:
+   - *address*: the `ethcore.Address` (i.e. Buffer) type, of length 20 bytes.
+   - *bool*: the `boolean` type.
+   - *bytes* and its variants: the Buffer type of any length
+   - *int*, *uint*, and their variants: the `ethcore.Int` (i.e. `big-integer`) type
+   - *string*: the `string` type
+   - arrays: Javascript arrays of the corresponding type.  Fixed and
+     dynamic arrays are not distinguished in this representation.
+   - enums: the type itself is represented via the `enum` library;
+     each name/value is a value of this type.
+   - structs: Javascript objects whose enumerable properties are the
+     names of the fields of the struct, with values equal to the
+     representations of the struct fields.
+
+#### Mappings
+These are treated specially in two ways.  First, naturally, a key must
+be supplied and the corresponding value returned.  Second, a Solidity
+mapping has no global knowledge of its contents, and thus, the entire
+mapping cannot be retrieved with a single query.  Therefore, a mapping
+variable accepts keys and returns promises of individual values, not
+the promise of an associative array (as might be expected from the
+description).  Each `state.mappingName` is a function having argument
+and return value:
+
+   - *argument*: The mapping key, provided as any value that
+      represents (as above) or can be converted to the type of the
+      mapping key (i.e. hex strings for Addresses).
+   - *return value*: a Promise resolving to that value.
+
+#### Functions
+A Solidity function `fName` appears as `state.fName` in the
+corresponding contract object.  This is actually a member function
+that takes the arguments of `fName`, either as:
+
+  - A single object whose enumerable properties are the names of the
+    Solidity function's arguments, and whose values (like those of
+    mapping keys) are apropriate representations of the arguments to
+    be passed.  All arguments must be passed at once.
+
+  - Multiple parameters corresponding to the arguments of the Solidity
+    function.  This is chiefly useful for functions with anonymous or
+    positionally meaningful parameters.  Again, all arguments must be
+    passed at once.
+
+The return value of this function has two methods:
+
+  - *txParams(params)*: takes optional transaction parameters `{value,
+      gasPrice, gasLimit}`.  Returns the same object, now with these
+      parameters remembered.
+
+  - *callFrom(privkey)*: calls the function from the account with the
+     given private key.  Its return value is a Promise of the return
+     value of the Solidity function, if any.
+
+Thus, one calls a solidity function as
+
+```js
+contractObj.state.fName(args|arg1, arg2, ..)[   .txParams(params)].callFrom(privkey);
+```

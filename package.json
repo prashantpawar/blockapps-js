@@ -1,6 +1,6 @@
 {
   "name": "blockapps-js",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "Interface to the Ethereum blockchain providing contract creation and transactions, state inspection, and dApp registration and management",
   "keywords": [
     "ethereum",
@@ -24,8 +24,9 @@
     "url": "http://blockapps.net"
   },
   "files": [
-    "js/",
-    "api-node.js"
+      "js/",
+      "index.js",
+      "mkbrowser.sh"
   ],
   "main": "api-node",
   "repository": {
@@ -33,17 +34,30 @@
     "url": "https://github.com/blockapps/blockapps-js/blockapps-js.git"
   },
   "dependencies": {
-    "ethereumjs-tx": "",
-    "ethereumjs-util": "",
-    "string": "",
     "big-integer": "",
-    "enum": "",
+    "bluebird": "^2.9.34",
+    "browser-request": "",
     "crypto-js": ">=3.1",
+    "enum": "",
+    "ethereumjs-tx": "0.5.5",
+    "ethereumjs-util": "",
     "request": "",
-    "browser-request": ""
+    "string": ""
   },
-  "engine": "node >= 0.12.5",
+  "engines": {
+	  "node": ">= 0.12.5"
+  },
   "devDependencies": {
-    "browserify": "^11.0.1"
+    "browserify": "^11.0.1",
+    "chai": "^3.2.0",
+    "gulp": "^3.9.0",
+    "gulp-jshint": "^1.11.2",
+    "gulp-mocha": "^2.1.3",
+    "mocha": "^2.2.5"
+  },
+  "scripts": {
+    "build": "npm run test && npm run build-browser",
+    "build-browser": "sh mkbrowser.sh",
+    "test": "mocha"
   }
 }

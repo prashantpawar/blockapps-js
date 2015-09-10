@@ -6,11 +6,14 @@
     <script src="bulkQuery.js"></script>
   </head>
   <body>
-    <label for="patronName">Nominate a donor:</label>
-    <input id="patronName" type="text" size=40 name="patronName">
-    <input id="patronValue" type="text" size=10 name="patronValue">
-    <button id="donate" autofocus=true disabled=true type="button"
-            onclick="buttonPush()">Become a patron!</button>
-    <textarea id="placardArea" readonly=true rows=24 cols=80></textarea>
+    <div>
+      <label for="patronName">Become a donor:</label>
+      <input id="patronName" type="text" size=40 name="patronName">
+      <input id="patronValue" type="text" size=10 name="patronValue">
+      <button id="donate" autofocus=true type="button" onclick="buttonPush()">Become a patron!</button>
+    </div>
+    <div>
+      <textarea id="placardArea" readonly rows=24 cols=80></textarea>
+    </div>
   </body>
 </html>
