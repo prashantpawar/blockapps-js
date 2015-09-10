@@ -45,7 +45,7 @@
     "string": ""
   },
   "engines": {
-	  "node": ">= 0.10.40"
+	  "node": ">= 0.12.5"
   },
   "devDependencies": {
     "browserify": "^11.0.1",
