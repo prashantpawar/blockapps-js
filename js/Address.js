@@ -12,7 +12,8 @@ function Address(x) {
 
     var result;
     if (typeof x === "string") {
-        result = (new Buffer(20)).fill(0);
+        result = new Buffer(20);
+        result.fill(0);
         if (x.slice(0,2) === "0x") {
             x = x.slice(2);
         }
