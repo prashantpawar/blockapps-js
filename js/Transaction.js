@@ -35,7 +35,6 @@ function Transaction(argObj) {
         privKeyFrom = new Buffer(privKeyFrom,"hex");
         var fromAddr = Address(privateToAddress(privKeyFrom));
         tx.from = fromAddr.toString();
-        console.log(addressTo);
         if (addressTo !=/* Intentional */ undefined) {
             tx.to = Address(addressTo).toString();
         }
