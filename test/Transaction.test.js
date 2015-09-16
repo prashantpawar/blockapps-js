@@ -79,6 +79,7 @@ describe("Transaction", function () {
                 "gasPrice": gasPrice,
                 "gasLimit": gasLimit
             });
+
             valueTX(privkeyFrom, addressTo).then(function(txResult) {
                 console.warn("I shouldn't be here");
             },function(txResult) {
