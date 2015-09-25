@@ -557,5 +557,7 @@ The call `MultiTX([txs]).multiSend(privkey)` returns the Promise of a
 list of return values, one for each transaction.  If the return type
 is unknown (as for a bare unsent `Transaction`) or void (as for a
 Solidity function with no return value) then the corresponding entry
-in the list is `undefined`; otherwise, it is the same as what would be
-returned from a single Solidity method call.
+in the list is `null`; otherwise, it is the same as what would be
+returned from a single Solidity method call.  If a constituent
+transaction failed for some reason, then its return value is
+`undefined`.
