@@ -41,33 +41,30 @@ function solMethod(sym, symRow) {
             });
         }
 
-        return {
-            _to : this,
-            _data : funcArgs(symRow, arr),
-            _params : {},
-            _ret : fRet,
-            txParams : txParams,
-            callFrom : callFrom
-        };
+        var result = Transaction({
+            "to" : this,
+            "data": funcArgs(symRow ,arr)
+        });
+        result.txParams = txParams;
+        result.callFrom = callFrom;
+        Object.defineProperty(result, "_ret", {value: fRet});
+        return result;
     }
 }
 
-
 function txParams(txParams) {
-    if (txParams instanceof Object) {
-        this._params = txParams;
-    }
+    ["value", "gasPrice", "gasLimit"].forEach(function(param) {
+        if (param in txParams) {
+            this[param] = txParams[param];
+        }
+    }.bind(this))
     return this;
 }
 
 function callFrom(from) {
-    if (this._data === undefined) {
-        throw "Solidity function call: must invoke .args|.argsList first";
-    }
-    this._params.data = this._data;
-    return Transaction(this._params)(from, this._to).
-        get("response").
-        then(decodeReturn.bind(null, this._ret));
+    return this.send(from).get("response").then(
+        decodeReturn.bind(null, this._ret)
+    );
 }
 
 
@@ -77,6 +74,7 @@ function funcArgs(symRow, x) {
         "arrayElements" : symRow["functionDomain"],
         "arrayLength" : symRow["functionDomain"].length
     };
+
     return symRow["functionHash"] + funcArg(symRow1, x);
 }
 
@@ -99,6 +97,7 @@ function mapArg(symRow, x) {
     }
 }
 
+module.exports.funcArg = funcArg
 function funcArg(symRow, y) {
     var type = symRow["jsType"];
     switch (type) {
@@ -198,9 +197,10 @@ function encodingBytes(hexString, dynamic) {
     return result;
 }
 
+module.exports.decodeReturn = decodeReturn;
 function decodeReturn(symRow, x) {
     if (symRow === undefined) {
-        return Promise.resolve(null);
+        return null;
     }
     
     function getLength(symRow1) {
@@ -252,6 +252,25 @@ function decodeReturn(symRow, x) {
         }
     }
     return go(symRow);
+}
+
+module.exports.encodingLength = encodingLength;
+function encodingLength(symRow) {
+    if (isDynamic(symRow)) {
+        return undefined;
+    }
+
+    var type = symRow["jsType"]
+    switch (type) {
+    case "Bytes":
+        return Math.floor(parseInt(symRow["bytesUsed"], 16) + 32);
+    case "Array":
+        return parseInt(symRow["arrayLength"], 16) *
+            encodingLength(symRow["arrayElement"]);
+    case "Address" : case "Bool" : case "Int" : return 32;
+    default:
+        throw "Type " + type + " does not have a fixed encoding length";
+    }
 }
 
 /*

@@ -50,7 +50,7 @@ function SolContract(privkey, txParams) {
         txParams = {};
     }
     txParams.data = this.vmCode;
-    return Transaction(txParams)(privkey, null).get("contractsCreated").
+    return Transaction(txParams).send(privkey, null).get("contractsCreated").
         tap(function(addrList){
             if (addrList.length !== 1) {
                 throw "code must create one and only one account";

@@ -167,6 +167,20 @@ function submitTransaction(txObj) {
             "Transaction still incomplete after " +
                 pollPromise.defaults.pollTimeoutMS / 1000 + " seconds"
         );
+    }).catch(function(txResult) {
+        var msg = "Transaction failed with transaction result:\n" +
+            JSON.stringify(txResult, undefined, "  ") + "\n";
+        if (txResult.transactionHash.length != 0) {
+            return transaction({hash: txResult.transactionHash}).
+                then(function(tx) {
+                    return Promise.reject(msg + "\nTransaction was:\n" +
+                                          JSON.stringify(tx, undefined, "  "));
+                });
+        }
+        else {
+            return Promise.reject(msg);
+        }
+
     })
 }
 
