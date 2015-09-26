@@ -1,7 +1,7 @@
 # blockapps-js
 
 [![Build Status](https://travis-ci.org/blockapps/blockapps-js.svg)](https://travis-ci.org/blockapps/blockapps-js)
-[![Coverage Status](https://coveralls.io/repos/prashantpawar/blockapps-js/badge.svg?branch=features/add_coveralls_code_coverage&service=github)](https://coveralls.io/github/prashantpawar/blockapps-js?branch=features/add_coveralls_code_coverage)
+[![Coverage Status](https://coveralls.io/repos/blockapps/blockapps-js/badge.svg?branch=master&service=github)](https://coveralls.io/github/blockapps/blockapps-js?branch=master)
 
 blockapps-js is a library that exposes a number of functions for
 interacting with the Blockchain via the BlockApps API.  Currently it
