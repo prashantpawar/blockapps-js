@@ -1,18 +1,14 @@
-var Int = require("../js/Int.js");
-var bigInt = require('big-integer');
-
-var expect = require('chai').expect;
-
 describe("Int type", function() {
-    var number = 161;
-    var decString = "161";
-    var hexString = "0xa1";
-    var bytes = new Buffer("a1", "hex");
+    before(function() {
+        Int = lib.ethbase.Int;
+        number = 161;
+    })
 
     it("should return a new Int object", function() {
-        expect(typeof Int).to.equal('function');
+        expect(Int).to.be.a('function');
     });
     it("should construct a 'big-integer'", function() {
+        var bigInt = require('big-integer');
         var ethInt = Int(number);
         expect(bigInt.isInstance(ethInt)).to.be.true;
     });
@@ -21,15 +17,15 @@ describe("Int type", function() {
         expect(ethInt.valueOf()).to.equal(number);
     });
     it("should accept decimal strings", function() {
-        var ethInt = Int(decString);
+        var ethInt = Int("161");
         expect(ethInt.valueOf()).to.equal(number);
     });
     it("should accept 0x(hex) strings", function() {
-        var ethInt = Int(hexString);
+        var ethInt = Int("0xa1");
         expect(ethInt.valueOf()).to.equal(number);
     });
     it("should accept hex Buffers", function() {
-        var ethInt = Int(bytes);
+        var ethInt = Int(new Buffer("a1", "hex"));
         expect(ethInt.valueOf()).to.equal(number);
     });
 });
