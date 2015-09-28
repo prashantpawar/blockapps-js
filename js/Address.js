@@ -12,7 +12,8 @@ function Address(x) {
 
     var result;
     if (typeof x === "string") {
-        result = (new Buffer(20)).fill(0);
+        result = new Buffer(20);
+        result.fill(0);
         if (x.slice(0,2) === "0x") {
             x = x.slice(2);
         }
@@ -26,7 +27,14 @@ function Address(x) {
         result.write(x, 20 - byteLength, byteLength, "hex");
     }
     else if (Buffer.isBuffer(x)) {
-        result = x.slice(-20);
+        if (x.length < 20) {
+            result = new Buffer(20);
+            result.fill(0);
+            x.copy(result, 20 - x.length);
+        }
+        else {
+            result = x.slice(-20);
+        }
     }
     else {
         throw "Address(x): x must be a number, a hex string, or a Buffer";

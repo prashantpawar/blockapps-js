@@ -5,12 +5,16 @@ var NotDoneError = require("./pollPromise.js").NotDoneError;
 
 module.exports = Storage;
 function Storage(address) {
+    if (!(this instanceof Storage)) {
+        return new Storage(address);
+    }
     this.address = Address(address).toString();
 }
 Storage.prototype = {
     "address" : "",
     "getSubKey" : getSubKey,
-    "getKeyRange" : getKeyRange
+    "getKeyRange" : getKeyRange,
+    "constructor" : Storage
 };
 
 function getSubKey(key, start, size) {

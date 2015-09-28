@@ -19,7 +19,12 @@ function Int(x) {
         }
     }
     else if (Buffer.isBuffer(x)) {
-        result = bigInt(x.toString("hex"),16);
+        if (x.length == 0) {
+            result = bigInt(0);
+        }
+        else {
+            result = bigInt(x.toString("hex"),16);
+        }
     }
     else {
         throw "Int(x): x must be a number, hex string, or Buffer";

@@ -15,9 +15,8 @@ gulp.task('lint', function() {
 gulp.task('test', function () {
     return gulp.src('test/*.js', {read: false})
         // gulp-mocha needs filepaths so you can't have any plugins before it 
-        .pipe(mocha());
+        .pipe(mocha({ui: 'bdd'}));
 });
-
 
 // Watch Files For Changes
 gulp.task('watch', function() {

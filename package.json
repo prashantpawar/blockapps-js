@@ -24,9 +24,9 @@
     "url": "http://blockapps.net"
   },
   "files": [
-      "js/",
-      "index.js",
-      "mkbrowser.sh"
+    "js/",
+    "index.js",
+    "mkbrowser.sh"
   ],
   "main": "api-node",
   "repository": {
@@ -45,19 +45,27 @@
     "string": ""
   },
   "engines": {
-	  "node": ">= 0.12.5"
+    "node": ">= 0.12.5"
   },
   "devDependencies": {
-    "browserify": "^11.0.1",
-    "chai": "^3.2.0",
-    "gulp": "^3.9.0",
-    "gulp-jshint": "^1.11.2",
-    "gulp-mocha": "^2.1.3",
-    "mocha": "^2.2.5"
+      "browserify": "^11.0.1",
+      "chai": "^3.2.0",
+      "chai-as-promised": "",
+      "coveralls": "^2.11.4",
+      "gulp": "^3.9.0",
+      "gulp-jshint": "^1.11.2",
+      "gulp-mocha": "^2.1.3",
+      "istanbul": "^0.3.19",
+      "mocha": "^2.2.5",
+      "mocha-lcov-reporter": "0.0.2",
+      "nock": "^2.10.0",
+      "sinon": "^1.16.1",
+      "sinon-chai": "^2.8.0"
   },
   "scripts": {
     "build": "npm run test && npm run build-browser",
     "build-browser": "sh mkbrowser.sh",
+    "coveralls": "istanbul cover ./node_modules/mocha/bin/_mocha --report lcovonly -- -R spec && cat ./coverage/lcov.info | ./node_modules/coveralls/bin/coveralls.js && rm -rf ./coverage",
     "test": "mocha"
   }
 }

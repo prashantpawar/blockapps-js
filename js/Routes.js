@@ -161,12 +161,26 @@ function accountAddress(address) {
 module.exports.submitTransaction = submitTransaction;
 function submitTransaction(txObj) {
     return HTTPQuery("/transaction", {"data":txObj}).return(
-        pollPromise(transactionResult.bind(null,txObj.partialHash))
+        pollPromise(transactionResult.bind(null, txObj.partialHash))
     ).catch(Promise.TimeoutError, function() {
         return Promise.reject(
             "Transaction still incomplete after " +
                 pollPromise.defaults.pollTimeoutMS / 1000 + " seconds"
         );
+    }).catch(function(txResult) {
+        var msg = "Transaction failed with transaction result:\n" +
+            JSON.stringify(txResult, undefined, "  ") + "\n";
+        if (txResult.transactionHash.length != 0) {
+            return transaction({hash: txResult.transactionHash}).
+                then(function(tx) {
+                    return Promise.reject(msg + "\nTransaction was:\n" +
+                                          JSON.stringify(tx, undefined, "  "));
+                });
+        }
+        else {
+            return Promise.reject(msg);
+        }
+
     })
 }
 
@@ -213,7 +227,7 @@ function transactionResult(txHash) {
         }
     ).then(function(txResult){
         if (txResult.message !== "Success!") {
-            return Promise.reject(txResult.message);
+            return Promise.reject(txResult);
         }
         var contractsCreated = txResult.contractsCreated.split(",");
         txResult.contractsCreated = contractsCreated;

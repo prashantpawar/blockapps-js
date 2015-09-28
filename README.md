@@ -1,6 +1,7 @@
 # blockapps-js
 
 [![Build Status](https://travis-ci.org/blockapps/blockapps-js.svg)](https://travis-ci.org/blockapps/blockapps-js)
+[![Coverage Status](https://coveralls.io/repos/blockapps/blockapps-js/badge.svg?branch=master&service=github)](https://coveralls.io/github/blockapps/blockapps-js?branch=master)
 
 blockapps-js is a library that exposes a number of functions for
 interacting with the Blockchain via the BlockApps API.  Currently it
@@ -66,7 +67,7 @@ var privkeyFrom = "1dd885a423f4e212740f116afa66d40aafdbb3a381079150371801871d9ea
 // This statement doesn't actually send a transaction; it just sets it up.
 var valueTX = Transaction({"value" : Int(10).pow(18)}); // 1 ether
 
-valueTX(privkeyFrom, addressTo).then(function(txResult) {
+valueTX.send(privkeyFrom, addressTo).then(function(txResult) {
   // txResult.message is either "Success!" or an error message
   // For this transaction, the error would be about insufficient balance.
 });
@@ -108,7 +109,7 @@ Solidity(code).newContract(privkey, {"value": 100}).then(function(contract) {
 });
 ```
 
-### Call a Solidity method
+#### Call a Solidity method
 
 ```js
 var Solidity = require('blockapps-js').Solidity;
@@ -147,9 +148,55 @@ Solidity(code).newContract(privkey).then(function(contract) {
 });
 ```
 
+#### Call many methods in a single message transaction
+
+```js
+var Solidity = require('blockapps-js').Solidity;
+var MultiTX = require('blockapps-js').MultiTX;
+var Promise = require('bluebird'); // This is the promise library we use
+
+var code = 'contract C {                        \n\
+  uint knocks;                                  \n\
+                                                \n\
+  function knock(uint times) returns (string) { \n\
+    knocks += times;                            \n\
+    if (times == 0) {                           \n\
+      return "I couldn\'t hear that!";          \n\
+    }                                           \n\
+    else {                                      \n\
+      return "Okay, okay!";                     \n\
+    }                                           \n\
+  }                                             \n\
+}';
+
+var privkey = "1dd885a423f4e212740f116afa66d40aafdbb3a381079150371801871d9ea281";
+
+Solidity(code).newContract(privkey).then(function(contract) {
+  // This time, we don't actually call the Solidity method yet.
+  // However, we should take care to specify gas limits individually.
+  // If this limit seems high...you never know.  But it should not
+  // be so high that paying it in the middle of a VM run would
+  // cause an out-of-gas exception.
+  function knock(n) {
+    return contract.state.knock(n).txParams({gasLimit: 100000});
+  }
+
+  // This does all four calls in a single transaction, which saves a
+  // lot of gas and time.
+  MultiTX([0,1,2,3].map(knock)).multiSend(privkey)
+  .then(function(replies) {
+    replies[0] == "I couldn't hear that!";
+    replies[1] == "Okay, okay!";
+    // etc.
+  }).then(function() {
+    contract.state.knocks == 6; 
+  });
+});
+```
+
 ## API details
 
-The `blockapps-js` library has three main submodules.
+The `blockapps-js` library has four main submodules.
 
 ### The `ethbase` submodule
 
@@ -199,19 +246,24 @@ features.
    numbers, or Ints and encoding them into 32-byte Buffers.  It throws
    an exception if the input is too long.
 
- - `ethbase.Transaction`: a constructor for Ethereum transactions.  `blockapps-js` abstracts a transaction into two parts:
+ - `ethbase.Transaction`: a constructor for Ethereum transactions.
+   `blockapps-js` abstracts a transaction into two parts:
 
    - *parameters*: The argument to Transaction is an object with up to
-      three members: `value`, `gasPrice`, and `gasLimit`, all numbers.
-      Their defaults are provided in `ethbase.Transaction.defaults` as
-      respectively 0, 1, and 3141592.
+      four members: the numbers `value`, `gasPrice`, and `gasLimit`,
+      whose defaults are provided in `ethbase.Transaction.defaults` as
+      respectively 0, 1, and 3141592; and the hex string or Buffer
+      `data`.  Optionally, this object may contain `to` as well, a
+      value convertible to Address.
 
-   - *participants*: A call to `ethbase.Transaction` returns a
-      function with two arguments, respectively a private key (hex
-      string) and Address, denoting the sender and recipient of the
-      transaction.  Calling this function sends the transaction and
-      returns a Promise resolving to the transaction result (see the
-      "routes" section).
+   - *participants*: A call to `ethbase.Transaction` returns an object
+      with a method `send` taking two arguments, respectively a
+      private key (hex string) and Address, denoting the sender and
+      recipient of the transaction.  The second argument is optional
+      if `to` is passed as a parameter to `ethbase.Transaction`, and
+      overrides it if present.  Calling this function sends the
+      transaction and returns a Promise resolving to the transaction
+      result (see the "routes" section).
 
 ### The `routes` submodule
 
@@ -439,3 +491,73 @@ Thus, one calls a solidity function as
 ```js
 contractObj.state.fName(args|arg1, arg2, ..)[   .txParams(params)].callFrom(privkey);
 ```
+
+### The `MultiTX` submodule
+This submodule makes use of a contract (currently only available on
+hacknet.blockapps.net) that sequentially executes a list of
+transactions in a single message call.  This has several advantages
+over sending them individually in series:
+
+ 1. The overhead for a single Ethereum message call is 21,000 gas
+   before the VM even begins execution.  This cost is *not* incurred
+   for CALL opcodes within an existing execution environment, though,
+   so enormous gas savings are possible if several transactions are
+   rendered as CALLs in a single message-call transaction for which
+   the up-front cost is only paid once.
+
+   These savings are not realized for contract-creation transactions,
+   since the CREATE opcode is even more expensive (32,000 gas).
+   However, the following benefit may compensate even for this.
+
+ 2. A valid transaction must contain the current nonce of the sender,
+   and if successful, increments that nonce.  Thus, each transaction
+   in a sequence must wait for confirmation of the success of the
+   previous one before it can be sent with any hope of acceptance.
+   The MultiTX facility, however, only sends one transaction, and
+   therefore only needs to query the nonce once, so there is no delay
+   in executing the latter members of the sequence.
+
+ 3. Similarly, if one wishes to make a series of related transactions
+   each depending on the outcome of the earlier ones, then they have
+   to be sent in strict sequence.  MultiTX respects the sequencing of
+   its arguments, but compresses the time frame for execution.
+
+The `MultiTX` function takes one argument, a Javascript array of
+"unsent transactions".  An unsent transaction can be either:
+
+ - The result of a call to `ethbase.Transaction({data, value,
+   gasLimit, to})`; `gasPrice`, if present, is ignored.  Though
+   `gasLimit` is technically optional, it is recommended to include it
+   in each case, because as the calls are made, these limits are
+   deducted in advance, and one must take care not to run out of gas.
+
+ - The result of a call to `contract.state.method(args)`, possibly
+   with a subsequent `txParams` call, where `contract` is any Solidity
+   contract object as described previously.
+
+It accepts a further call to its member `txParams`, which only
+respects the parameters `gasPrice` and `gasLimit`.  Each of the
+constituent transactions is run with the gasLimit provided to it, and
+the gas limit provided in `txParams` (or the default gas limit for a
+Transaction, if not present) is used for the overall MultiTX call.
+Since only one gas price can be set for a single VM run, the overall
+`gasPrice` applies to all the constituents.
+
+Finally, the member function `multiSend(privkey)` executes the list of
+transactions in sequence in a single message call sent from the
+account with the given private key.  Once again, since a single
+transaction may have only one originator, it is not possible to send a
+MultiTX from several accounts.
+
+The value sent with MultiTX is computed from the constituent values;
+there may be a fee in addition (at the moment, it is `0x400` wei),
+which is automatically added on.
+
+The call `MultiTX([txs]).multiSend(privkey)` returns the Promise of a
+list of return values, one for each transaction.  If the return type
+is unknown (as for a bare unsent `Transaction`) or void (as for a
+Solidity function with no return value) then the corresponding entry
+in the list is `null`; otherwise, it is the same as what would be
+returned from a single Solidity method call.  If a constituent
+transaction failed for some reason, then its return value is
+`undefined`.
