@@ -10,6 +10,8 @@ before(function() {
     serverUrl = HTTPQuery.defaults.serverURI + HTTPQuery.defaults.apiPrefix;
     blockapps = nock(serverUrl);
 
+    Promise = require("bluebird");
+
     lib = require("../index.js");
 
     addressTo = "16ae8aaf39a18a3035c7bf71f14c507eda83d3e3";
