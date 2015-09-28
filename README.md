@@ -25,9 +25,12 @@ All functionality is included in the `blockapps-js` module:
 ```js
 var blockapps = require('blockapps-js');
 /* blockapps = {
- *   ethbase : { Account, Address, Int, Storage, Transaction },
+ *   ethbase : { Account, Address, Int, Storage, Transaction, Units },
  *   routes,
+ *   query,
+ *   polling,
  *   Solidity
+ *   MultiTX
  * }
 ```
 
@@ -60,12 +63,13 @@ Account(address).balance.then(function(balance) {
 var ethbase = require('blockapps-js').ethbase
 var Transaction = ethbase.Transaction;
 var Int = ethbase.Int;
+var ethValue = ethbase.Units.ethValue;
 
 var addressTo = "16ae8aaf39a18a3035c7bf71f14c507eda83d3e3";
 var privkeyFrom = "1dd885a423f4e212740f116afa66d40aafdbb3a381079150371801871d9ea281";
 
 // This statement doesn't actually send a transaction; it just sets it up.
-var valueTX = Transaction({"value" : Int(10).pow(18)}); // 1 ether
+var valueTX = Transaction({"value" : ethValue(1).in("ether")});
 
 valueTX.send(privkeyFrom, addressTo).then(function(txResult) {
   // txResult.message is either "Success!" or an error message
@@ -264,6 +268,25 @@ features.
       overrides it if present.  Calling this function sends the
       transaction and returns a Promise resolving to the transaction
       result (see the "routes" section).
+
+ - `ethbase.Units`: Provides some simple conversions between
+   denominations of ether currency.  The interface imitates the
+   `convert-units` Node.js package.  There are two main functions:
+
+    - `ethValue`: called as `ethValue(x).in(denom)`, produces a
+      numerical-type result (actually a value from the `bignumber.js`
+      package) equal to the number of `wei` in a value of `x` in
+      `denom`.  For example, `ethValue(1).in("ether")` is `1e18` wei.
+      This numerical value can be converted to `Int` and is acceptable
+      as a `value` parameter in a Transaction.
+
+    - `convertEth`: this converts between two denominations, and is
+      called like `convertEth(x).from(denom1).to(denom2)`.  In
+      particular, `ethValue(x).in(denom)` is the same as
+      `convertEth(x).from(denom).to("wei")`.  It also accepts two
+      arguments, as `convertEth(n,d)`, which is mathematically
+      equivalent to `convertEth(n/d)` (except that `n` and `d` are
+      integral types).
 
 ### The `routes` submodule
 
