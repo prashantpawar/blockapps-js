@@ -1,18 +1,16 @@
 before(function() {
+    lib = require("../index.js");
+
     chai = require("chai");
     expect = chai.expect;
 
     chaiPromise = require("chai-as-promised");
     chai.use(chaiPromise);
-
-    nock = require("nock");
-    HTTPQuery = require("../js/HTTPQuery.js");
-    serverUrl = HTTPQuery.defaults.serverURI + HTTPQuery.defaults.apiPrefix;
-    blockapps = nock(serverUrl);
-
     Promise = require("bluebird");
 
-    lib = require("../index.js");
+    nock = require("nock");
+    serverUrl = lib.query.serverURI + lib.query.apiPrefix;
+    blockapps = nock(serverUrl);
 
     addressTo = "16ae8aaf39a18a3035c7bf71f14c507eda83d3e3";
     addressFrom = "e1fd0d4a52b75a694de8b55528ad48e2e2cf7859";
