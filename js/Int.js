@@ -1,7 +1,7 @@
 var bigInt = require('big-integer');
+var bigNum = require('bignumber.js');
 
 module.exports = Int;
-module.exports.assert = assertInt;
 module.exports.isInstance = bigInt.isInstance
 
 function Int(x) {
@@ -27,14 +27,15 @@ function Int(x) {
         }
     }
     else {
-        throw "Int(x): x must be a number, hex string, or Buffer";
+        try {
+            result = bigInt(x.toString(), 10);
+        }
+        catch (e) {
+            var err = "Received exception:\n" + e + "\n" +
+                "Int(x): x must be a number, hex string, or Buffer";
+            throw new Error(err);
+        }
     }
 
     return result;
-}
-
-function assertInt(x, prefix) {
-    if (!bigInt.isInstance(x)) {
-        throw "" + prefix + "was not created by Int()";
-    }
 }

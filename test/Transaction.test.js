@@ -65,13 +65,19 @@ describe("Transaction", function() {
             blockapps
                 .filteringPath(/transactionResult\/[a-f0-9]*/, 'transactionResult')
                 .get("/transactionResult")
-                .reply(200, [{
-                    "message": succeeded ? success : failure,
-                    "transactionHash": "abcd",
-                    "contractsCreated":
-                    (created === undefined) ? "" : created.join(",")
-                }]);
+                .reply(200, function(uri) {
+                    return [{
+                        "message": succeeded ? success : failure,
+                        "transactionHash": uri.split('/').pop(),
+                        "contractsCreated":
+                        (created === undefined) ? "" : created.join(",")
+                    }]
+                });
         }
+
+        before(function() {
+            Promise = require("bluebird");
+        });
         
         beforeEach(function() {
             blockapps
@@ -101,7 +107,6 @@ describe("Transaction", function() {
                 .which.is.a("function");
         });
         it("return promise should be the transactionResult object", function() {
-            var Promise = require("bluebird");
             var contractsCreated = ["a", "b"]
             txResult(true, contractsCreated);
             var txR = tx.send(privkeyFrom)
@@ -109,6 +114,20 @@ describe("Transaction", function() {
                 expect(txR).to.eventually.have.property("transactionHash"),
                 expect(txR).to.eventually.have.property("contractsCreated")
                     .which.eqls(contractsCreated)
+            );
+        });
+        it("second argument should override the 'to' parameter", function() {
+            txResult(true);
+            txResult(true);
+            blockapps.post("/transaction").reply(200);
+            var txR = Transaction().send(privkeyFrom);
+            var txR2 = Transaction().send(privkeyFrom, addressTo);
+            return Promise.join(
+                function(hash1, hash2) {
+                    if (hash1 == hash2) {
+                        throw Error("transactions do not differ")
+                    }
+                }
             );
         });
     });
