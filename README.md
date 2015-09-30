@@ -288,6 +288,8 @@ This component provides Javascript support for the basic concepts of
 Ethereum, independent of high-level languages or implementation
 features.
 
+The following names are member functions of `blockapps.ethbase`:
+
 #### `Int`
 
 The constructor for an abstraction of Ethereum's 32-byte words, which
@@ -398,7 +400,7 @@ server for their results, with the following parameters:
  - `polling.pollEveryMS`: by default, 500 (milliseconds)
  - `polling.pollTimeoutMS`: by default, 10000 (milliseconds)
 
-The routes are:
+The following "routes" are member functions of `blockapps.routes`:
 
 #### `solc(code)`
 
@@ -510,10 +512,10 @@ Gets all storage from *address*.
 
 ### The `Solidity` submodule
 
-This submodule is the interface to the Solidity language, allowing
-source code to be transformed into Ethereum contracts and these
-contracts' states queried and methods invoked directly from
-Javascript.
+The member `blockapps.Solidity` is the interface to the Solidity
+language, allowing source code to be transformed into Ethereum
+contracts and these contracts' states queried and methods invoked
+directly from Javascript.
 
 #### Solidity constructor
 
@@ -636,9 +638,10 @@ contractObj.state.fName(args|arg1, arg2, ..)[   .txParams(params)].callFrom(priv
 ```
 
 ### The `MultiTX` submodule
-This submodule makes use of a contract (currently only available on
-hacknet.blockapps.net) that sequentially executes a list of
-transactions in a single message call.
+
+The member function `blockapps.MultiTX` makes use of a contract
+(currently only available on hacknet.blockapps.net) that sequentially
+executes a list of transactions in a single message call.
 
 #### Rationale
 
