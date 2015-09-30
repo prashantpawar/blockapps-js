@@ -26,13 +26,13 @@ contract C {                             \n\
             blockapps.post("/solc").reply(200, {
                 "contracts" : [{"name" : "C", "bin" : "60006c"}],
                 "xabis" : { "C" : {"x" : {}, "f" : {} } }
-            }
+            });
         });
         it("accepts valid Solidity code, returning a Solidity object", function() {
             return expect(Solidity(code)).to.eventually.be.fulfilled
                 .and.to.eventually.be.an.instanceOf(Solidity);
         });
-        it("correctly assigns code and contract name"), function() {
+        it("correctly assigns code and contract name", function() {
             var solCode = Solidity(code);
             return Promise.join(
                 expect(solCode).to.eventually.have.property("code", code),

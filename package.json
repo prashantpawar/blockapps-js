@@ -11,18 +11,18 @@
     "homepage": "https://github.com/blockapps/blockapps-js",
     "bugs": {
         "url": "https://github.com/blockapps/blockapps-js/issues",
-        "email": "ryan.reich@consensys.net"
+        "email": "ryan@blockapps.net"
     },
     "license": "MIT",
     "author": {
         "name": "Ryan Reich",
-        "email": "ryan.reich@consensys.net",
+        "email": "ryan@blockapps.net",
         "url": "https://github.com/ryanreich"
     },
-    "contributors": {
-        "name": "BlockApps team",
-        "url": "http://blockapps.net"
-    },
+    "contributors": [
+        "BlockApps team (http://blockapps.net)",
+        "Prashant Pawar <prashantpawar@gmail.com>"
+    ],
     "files": [
         "js/",
         "index.js",
