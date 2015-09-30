@@ -1,4 +1,6 @@
-# blockapps-js
+# blockapps-js 
+
+[![BlockApps logo](http://blockapps.net/img/logo_cropped.png)](http://blockapps.net)
 
 [![Build Status](https://travis-ci.org/blockapps/blockapps-js.svg)](https://travis-ci.org/blockapps/blockapps-js)
 [![Coverage Status](https://coveralls.io/repos/blockapps/blockapps-js/badge.svg?branch=master&service=github)](https://coveralls.io/github/blockapps/blockapps-js?branch=master)
