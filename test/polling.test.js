@@ -76,11 +76,11 @@ describe("pollPromise", function() {
         setTimeout(finish.bind(null, 0), 15);
         var poll0 = pollPromise(promise.bind(null, 0));
 
-        setTimeout(finish.bind(null, 1), 25);
-        var poll1 = pollPromise(promise.bind(null, 1)).catch(
-            Promise.TimeoutError, function() {
-                return "Timed out";
-            });
+        // setTimeout(finish.bind(null, 1), 25);
+        // var poll1 = pollPromise(promise.bind(null, 1)).catch(
+        //     Promise.TimeoutError, function() {
+        //         return "Timed out";
+        //     });
 
         return Promise.join(
             expect(poll0).to.eventually.equal("Success"),

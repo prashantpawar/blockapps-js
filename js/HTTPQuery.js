@@ -3,10 +3,7 @@ var request = Promise.promisify(require("request"));
 
 module.exports = HTTPQuery;
 
-var defaults = {
-    apiPrefix : "/eth/v1.0",
-    serverURI : "http://hacknet.blockapps.net"
-};
+var defaults = {};
 
 module.exports.defaults = defaults;
 

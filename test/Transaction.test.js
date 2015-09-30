@@ -43,13 +43,13 @@ describe("Transaction", function() {
                to: "a"
            });
            expect(tx.value).to.satisfy(function(value) {
-               return Int(value) == Transaction.defaults.value;
+               return Int(value).equals(Int(Transaction.defaults.value));
            });
            expect(tx.gasPrice).to.satisfy(function(gasPrice) {
-               return Int(gasPrice) == Transaction.defaults.gasPrice;
+               return Int(gasPrice).equals(Int(Transaction.defaults.gasPrice));
            })
            expect(tx.gasLimit).to.satisfy(function(gasLimit) {
-               return Int(gasLimit) == Transaction.defaults.gasLimit;
+               return Int(gasLimit).equals(Int(Transaction.defaults.gasLimit));
            });
        });
 

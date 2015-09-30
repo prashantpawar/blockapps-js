@@ -2,10 +2,7 @@ var Promise = require('bluebird');
 
 module.exports = pollPromise;
 
-var defaults = {
-    "pollEveryMS" : 500,
-    "pollTimeoutMS" : 10000
-}
+var defaults = {}
 
 module.exports.defaults = defaults;
 

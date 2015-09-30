@@ -3,34 +3,19 @@ describe("HTTPQuery", function() {
         query = lib.query;
         HTTPQuery = require("../js/HTTPQuery");
         blockapps.filteringPath(/path\?.*/, "path");
+        setProfile = lib.setProfile;
     });
     it("should respond to default parameters", function() {
-        var apiPrefix = query.apiPrefix;
-        var apiPrefix2 = "/eth/v2.0";
-        var serverURI = query.serverURI;
-        var serverURI2 = "http://hacknet2.blockapps.net";
-        var blockapps2 = nock(serverURI + apiPrefix2);
-        var blockapps3 = nock(serverURI2 + apiPrefix);
+        setProfile("ethereum", "2.0");
+        var blockapps2 = nock(query.serverURI + query.apiPrefix);
 
-        blockapps.get("/").reply(200, "Success!");
-        var query1 = HTTPQuery("/", {"get":{}});
-        
         blockapps2.get("/").reply(200, "Success!");
-        query.apiPrefix = apiPrefix2;
         var query2 = HTTPQuery("/", {"get":{}});
 
-        blockapps3.get("/").reply(200, "Success!");
-        query.apiPrefix = apiPrefix;
-        query.serverURI = serverURI2;
-        var query3 = HTTPQuery("/", {"get":{}});
+        var e = expect(query2).to.eventually.be.ok;
 
-        query.serverURI = serverURI;
-        return Promise.join(
-            expect(query1).to.eventually.be.ok,
-            expect(query2).to.eventually.be.ok,
-            expect(query3).to.eventually.be.ok,
-            function() {}
-        );
+        setProfile("hacknet", "1.0");
+        return e;
     });
     it("should take 'get', 'post', and 'data' parameters and no others",function() {
         var params = {

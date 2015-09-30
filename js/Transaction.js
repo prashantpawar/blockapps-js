@@ -7,9 +7,7 @@ var Int = require("./Int.js");
 
 module.exports = Transaction;
 module.exports.defaults = {
-    "value": 0,
-    "gasPrice": 1,
-    "gasLimit": 3141592
+    "value": 0
 };
 
 // argObj = {
@@ -21,12 +19,15 @@ function Transaction(argObj) {
         argObj = module.exports.defaults;
     }
     
-    tx.gasPrice = !("gasPrice" in argObj) ?
-        module.exports.defaults.gasPrice : Int(argObj.gasPrice).toString(16);
-    tx.gasLimit = !("gasLimit" in argObj) ?
-        module.exports.defaults.gasLimit : Int(argObj.gasLimit).toString(16);
-    tx.value    = !("value" in argObj) ?
-        module.exports.defaults.value : Int(argObj.value).toString(16);
+    tx.gasPrice = Int(
+        !("gasPrice" in argObj) ? module.exports.defaults.gasPrice : argObj.gasPrice
+    ).toString(16);
+    tx.gasLimit = Int(
+        !("gasLimit" in argObj) ? module.exports.defaults.gasLimit : argObj.gasLimit
+    ).toString(16);
+    tx.value    = Int(
+        !("value" in argObj) ? module.exports.defaults.value : argObj.value
+    ).toString(16);
     tx.data = argObj.data;
     
     if (argObj.to !== undefined) {
