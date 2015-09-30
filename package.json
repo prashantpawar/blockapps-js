@@ -57,6 +57,7 @@
         "gulp-jshint": "^1.11.2",
         "gulp-mocha": "^2.1.3",
         "istanbul": "^0.3.19",
+        "minify" : "",
         "mocha": "^2.2.5",
         "mocha-lcov-reporter": "0.0.2",
         "nock": "^2.10.0",

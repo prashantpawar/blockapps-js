@@ -11,6 +11,7 @@ Javascript code.
 
 ## Contents
 - [Installation](#installation)
+  - [Browserification](#browserification)
 - [BlockApps documentation](#blockapps-documentation)
 - [Overview](#overview)
   - [Quick Start](#quick-start)
@@ -57,6 +58,15 @@ Javascript code.
 ## Installation
 
 `npm install blockapps-js`
+
+### Browserification
+
+Run the script `mkbrowser.sh` in the source directory created by npm
+(e.g. "node_modules/blockapps-js/mkbrowser.sh").  It will create a
+file called `blockapps.js` in the same directory that can be included
+in an HTML file as a script.  The call `require("blockapps-js")` is
+made available by the script to encourage you to write your supporting
+Javascript files in the same style as any Node module.
 
 ## BlockApps documentation
 
