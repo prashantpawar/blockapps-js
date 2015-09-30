@@ -22,6 +22,7 @@ Javascript code.
     - [Call a Solidity method](#call-a-solidity-method)
     - [Call many methods in a single message transaction](#call-many-methods-in-a-single-message-transaction)
 - [API details](#api-details)
+  - [BlockApps profiles](#blockapps-profiles)
   - [The `ethbase` submodule](#the-ethbase-submodule)
     - [`Int`](#int)
     - [`Address`](#address)
@@ -84,6 +85,7 @@ var blockapps = require('blockapps-js');
  *   routes,
  *   query,
  *   polling,
+ *   setProfile,
  *   Solidity
  *   MultiTX
  * }
@@ -255,7 +257,30 @@ Solidity(code).newContract(privkey).then(function(contract) {
 
 ## API details
 
-The `blockapps-js` library has four main submodules.
+### BlockApps profiles
+
+The `blockapps-js` library is designed to connect to any BlockApps
+node.  Depending on the node, different default parameters
+(particularly the polling parameters and gas prices) are appropriate.
+To handle this, the function `blockapps.setProfile` is provided with
+several default profiles.  Its usage is:
+
+```js
+setProfile(<profile name>, <optional version>)
+```
+
+where `<profile name>` is any of the keys of `setProfile.profiles`, currently one of:
+
+ - "hacknet": connects to the sandbox `http://hacknet.blockapps.net` with very
+   permissive defaults.
+   
+ - "ethereum": connects to the live network `http://api.blockapps.net`
+   with reasonable defaults given those of the official Ethereum
+   clients.
+
+The `<optional version>`, if present, must be of the form `n.m`, for
+example, `1.0`, and indicates which version of the BlockApps routes is
+requested.  Currently `1.0` is the only one.
 
 ### The `ethbase` submodule
 
