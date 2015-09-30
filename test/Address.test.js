@@ -17,6 +17,9 @@ describe("Address type", function() {
         var addrObj2 = Address("0x" + address);
         expect(addrObj.equals(addrObj2)).to.be.true;
     });
+    it("should reject non-hex strings", function() {
+        expect(Address.bind(null,"address")).to.throw(Error);
+    });
     it("should copy another Address", function() {
         var addrObj2 = Address(addrObj);
         expect(addrObj.equals(addrObj2)).to.be.true;

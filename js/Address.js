@@ -24,6 +24,11 @@ function Address(x) {
             x = "0" + x;
         }
         var byteLength = x.length/2;
+
+        if (!x.match(/^[0-9a-fA-F]*$/)) {
+            throw new Error("Address string must be valid hex");
+        }
+        
         result.write(x, 20 - byteLength, byteLength, "hex");
     }
     else if (Buffer.isBuffer(x)) {
