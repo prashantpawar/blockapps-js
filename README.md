@@ -648,7 +648,7 @@ executes a list of transactions in a single message call.
 This function has several advantages over sending transactions
 individually in series:
 
- 1. The overhead for a single Ethereum message call is 21,000 gas
+ - The overhead for a single Ethereum message call is 21,000 gas
    before the VM even begins execution.  This cost is *not* incurred
    for CALL opcodes within an existing execution environment, though,
    so enormous gas savings are possible if several transactions are
@@ -659,7 +659,7 @@ individually in series:
    since the CREATE opcode is even more expensive (32,000 gas).
    However, the following benefit may compensate even for this.
 
- 2. A valid transaction must contain the current nonce of the sender,
+ - A valid transaction must contain the current nonce of the sender,
    and if successful, increments that nonce.  Thus, each transaction
    in a sequence must wait for confirmation of the success of the
    previous one before it can be sent with any hope of acceptance.
@@ -667,7 +667,7 @@ individually in series:
    therefore only needs to query the nonce once, so there is no delay
    in executing the latter members of the sequence.
 
- 3. Similarly, if one wishes to make a series of related transactions
+ - Similarly, if one wishes to make a series of related transactions
    each depending on the outcome of the earlier ones, then they have
    to be sent in strict sequence.  MultiTX respects the sequencing of
    its arguments, but compresses the time frame for execution.

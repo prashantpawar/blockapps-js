@@ -32,11 +32,17 @@ contract C {                             \n\
             return expect(Solidity(code)).to.eventually.be.fulfilled
                 .and.to.eventually.be.an.instanceOf(Solidity);
         });
-        it("correctly assigns code and contract name", function() {
+        it("correctly assigns code, name, vmCode, symTab", function() {
             var solCode = Solidity(code);
             return Promise.join(
                 expect(solCode).to.eventually.have.property("code", code),
                 expect(solCode).to.eventually.have.property("name", "C"),
+                expect(solCode).to.eventually.have.property("vmCode", "60006c"),
+                expect(solCode).to.eventually.have.property("symTab")
+                    .that.eqls({
+                        "x":{},
+                        "f":{}
+                    }),
                 function(){}
             );
         });

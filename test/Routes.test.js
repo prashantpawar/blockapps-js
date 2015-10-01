@@ -1,6 +1,10 @@
 describe("Routes", function() {
     before(function() {
         routes = lib.routes;
+        solcReply = {
+            "contracts" : [{"name" : "C", "bin" : "60006c"}],
+            "xabis" : { "C" : {"x" : {}, "f" : {} } }
+        }
     });
 
     describe("'solc' route", function() {
@@ -21,15 +25,13 @@ contract C {                             \n\
             nock.cleanAll();
         });
         it("accepts strings and only strings, returning a promise", function() {
+            solcMock.times(2).reply(200, solcReply);
             expect(solc(code)).has.property("then").which.is.a("function");
             var solcThrow = solc.bind(null, ["not", "a", "string"]);
             expect(solcThrow).to.throw(Error);
         });
         it("compiles a valid contract", function() {
-            solcMock.reply(200, {
-                "contracts" : [{"name" : "C", "bin" : "60006c"}],
-                "xabis" : { "C" : {"x" : {}, "f" : {} } }
-            });
+            solcMock.reply(200, solcReply);
             var codeSolc = solc(code);
             return Promise.join(
                 expect(codeSolc).is.eventually.ok,
@@ -67,7 +69,6 @@ contract C {                             \n\
     });
 
     describe("'extabi' route", function() {
-
         before(function() {
             code = "                 \
 contract C {                             \n\
@@ -77,6 +78,9 @@ contract C {                             \n\
 }                                        \
 ";
             extabi = routes.extabi;
+            extabiReply = {
+                "C" : {"x" : {}, "f" : {} }
+            };
         });
         beforeEach(function() {
             extabiMock = blockapps.post("/extabi");
@@ -85,14 +89,13 @@ contract C {                             \n\
             nock.cleanAll();
         });
         it("accepts strings and only strings, returning a promise", function() {
+            extabiMock.times(2).reply(200, extabiReply);
             expect(extabi(code)).has.property("then").which.is.a("function");
             var extabiThrow = extabi.bind(null, ["not", "a", "string"]);
             expect(extabiThrow).to.throw(Error);
         });
         it("parses a valid contract", function() {
-            extabiMock.reply(200, {
-                "C" : {"x" : {}, "f" : {} }
-            });
+            extabiMock.reply(200, extabiReply);
             var codeExtabi = extabi(code);
             expect(codeExtabi).to.eventually.have.property("C");
         });
@@ -110,6 +113,14 @@ contract C {                             \n\
     describe("'faucet' route", function() {
         before(function() {
             faucet = routes.faucet;
+            doFaucet = function(n, x) {
+                blockapps
+                    .filteringPath(/account\?address=.*/, "account/address")
+                    .get("/account/address")
+                    .times(n).reply(200, x);
+                blockapps.post("/faucet")
+                    .times(n).reply(200, "Success!");
+            }
         });
         beforeEach(function() {
             pollevery = lib.polling.pollEveryMS;
@@ -121,20 +132,19 @@ contract C {                             \n\
             nock.cleanAll();
         });
         it("accepts an address", function() {
+            doFaucet(4, [{}])
             expect(faucet(address)).to.be.ok;
             expect(faucet(1)).to.be.ok;
             expect(faucet("a")).to.be.ok;
             expect(faucet(lib.ethbase.Address(address))).to.be.ok
         });
         it("POSTs to /faucet", function() {
-            blockapps.get("/account").query({"address":address}).reply(200, [{}]);
-            blockapps.post("/faucet").reply(200, "Success!");
+            doFaucet(1, [{}]);
             return expect(faucet(address).return(true)).to.eventually.be.ok
         });
         it("Handles timeouts", function() {
-            blockapps.get("/account").query({"address":address}).reply(200, []);
-            blockapps.post("/faucet").reply(200, "Success!");
-            lib.polling.pollEveryMS = 10;
+            doFaucet(2, []);
+            lib.polling.pollEveryMS = 5;
             var f = faucet(address).catch(function() {
                 return function() {throw new Error;}
             });
@@ -154,6 +164,7 @@ contract C {                             \n\
             nock.cleanAll();
         });
         it("accepts only {email, app, loginpass} and an address", function() {
+            blockapps.post("/login").times(3).reply(200, "Success!");
             expect(login({
                 "email": "ryan.reich@gmail.com",
                 "app": "bloc",
@@ -202,6 +213,7 @@ contract C {                             \n\
             nock.cleanAll();
         });
         it("accepts only {email, app, loginpass} and a key", function() {
+            blockapps.post("/wallet").times(3).reply(200, "Success!");
             expect(wallet({
                 "email": "ryan.reich@gmail.com",
                 "app": "bloc",
@@ -250,6 +262,7 @@ contract C {                             \n\
             nock.cleanAll();
         });
         it("accepts only {email, app, loginpass}", function() {
+            blockapps.post("/developer").times(2).reply(200, "Success!");
             expect(developer({
                 "email": "ryan.reich@gmail.com",
                 "app": "bloc",
@@ -292,6 +305,7 @@ contract C {                             \n\
             nock.cleanAll();
         });
         it("accepts only {email, app, loginpass} and a key", function() {
+            blockapps.post("/register").times(2).reply(200, "Success!");
             expect(register({
                 "email": "ryan.reich@gmail.com",
                 "app": "bloc",
@@ -345,6 +359,7 @@ contract C {                             \n\
             nock.cleanAll();
         });
         it("should accept a query object and nothing else", function() {
+            blockapps.get("/block").query(queryObj).times(2).reply(200, [{}]);
             expect(block({"address" : address})).to.be.ok;
             expect(block.bind(null,address)).to.throw(Error);
         });
@@ -368,6 +383,7 @@ contract C {                             \n\
             nock.cleanAll();
         });
         it("should take a number", function() {
+            blockapps.get("/block/last/1").reply(200, "Success!");
             expect(blockLast(1)).to.be.ok;
         });
         it("should round up its argument", function() {
@@ -390,38 +406,52 @@ contract C {                             \n\
     describe("'account' route", function() {
         before(function() {
             account = routes.account;
+            queryObj = {"address" : address}
         });
         afterEach(function() {
             nock.cleanAll();
         });
-        it("should accept a query object and nothing else", function() {
-            expect(account({"address" : address})).to.be.ok;
-            expect(account.bind(null,address)).to.throw(Error);
-        });
+        // it("should accept a query object and nothing else", function() {
+        //     blockapps.get("/account").query(queryObj).reply(200, [{}]);
+        //     expect(account(queryObj)).to.be.ok;
+        //     expect(account.bind(null,address)).to.throw(Error);
+        // });
         it("GETs from /account, returning a list", function() {
-            blockapps.get("/account").query(queryObj).reply(200, [{}]);
+            // blockapps.get("/account").query(queryObj).reply(200, [{}]);
+            nock('http://hacknet.blockapps.net:80')
+                .get('/eth/v1.0/account')
+                .query({"address":"e1fd0d4a52b75a694de8b55528ad48e2e2cf7859"})
+                .reply(200, [{}]);
             return expect(account(queryObj)).to.eventually.be.ok;
         });
         it("should handle empty list replies", function() {
             blockapps.get("/account").query(queryObj).reply(200, []);
-            var query = account(queryObj).catch(
+            var q = account(queryObj).catch(
                 Error, function() {return "NotDoneError";}
             );
-            return expect(query).to.eventually.equal("NotDoneError");
-        }); 
+            return expect(q).to.eventually.equal("NotDoneError");
+        });
     });
     describe("'accountAddress' route", function() {
         before(function() {
             accountAddress = routes.accountAddress;
+            queryObj = {"address" : address}
         });
         afterEach(function() {
             nock.cleanAll;
         });
         it("should accept an address", function() {
+            nock('http://hacknet.blockapps.net:80')
+                .get('/eth/v1.0/account')
+                .query({"address":"e1fd0d4a52b75a694de8b55528ad48e2e2cf7859"})
+                .reply(200, [{}]);
             expect(accountAddress(address)).to.be.ok;
         });
         it("should return an object, not a list", function() {
-            blockapps.get("/account").query(queryObj).reply(200, [{}]);
+            nock('http://hacknet.blockapps.net:80')
+                .get('/eth/v1.0/account')
+                .query({"address":"e1fd0d4a52b75a694de8b55528ad48e2e2cf7859"})
+                .reply(200, [{}]);
             return expect(accountAddress(address)).to.eventually.be
                 .an.instanceOf(Object).and.eventually.not.be.an.instanceOf(Array);
         });
@@ -487,6 +517,7 @@ contract C {                             \n\
     describe("'transaction' route", function() {
         before(function() {
             transaction = routes.transaction;
+            queryObj = {"address" : address}
         });
         afterEach(function() {
             nock.cleanAll();
@@ -516,6 +547,7 @@ contract C {                             \n\
             nock.cleanAll();
         });
         it("should take a number", function() {
+            blockapps.get("/transaction/last/1").reply(200, "Success!");
             expect(transactionLast(1)).to.be.ok;
         });
         it("should round up its argument", function() {
@@ -543,6 +575,10 @@ contract C {                             \n\
             nock.cleanAll();
         });
         it("should accept a hex string and nothing else", function() {
+            blockapps.get("/transactionResult/abcd").times(2).reply(200, [{
+                "message" : "Success!",
+                "contractsCreated": ""
+            }]);
             expect(transactionResult("abcd")).to.be.ok;
             expect(transactionResult.bind(null, "xyz")).to.throw(Error);
         });
@@ -573,6 +609,7 @@ contract C {                             \n\
     describe("'storage' route", function() {
         before(function() {
             storage = routes.storage;
+            queryObj = {"address" : address}
         });
         afterEach(function() {
             nock.cleanAll();
@@ -597,11 +634,13 @@ contract C {                             \n\
     describe("'storageAddress' route", function() {
         before(function() {
             storageAddress = routes.storageAddress;
+            queryObj = {"address" : address}
         });
         afterEach(function() {
             nock.cleanAll;
         });
         it("should accept an address", function() {
+            blockapps.get("/storage").query(queryObj).reply(200, {});
             expect(storageAddress(address)).to.be.ok;
         });
         it("should return an object, not a list", function() {
