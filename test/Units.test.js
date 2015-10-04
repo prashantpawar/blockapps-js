@@ -1,9 +1,4 @@
 describe("Units module", function() {
-    before(function() {
-        Units = lib.ethbase.Units;
-        Int = lib.ethbase.Int;
-    });
-
     it("should provide the 'ethValue' function", function() {
         expect(Units.ethValue).to.be.a("function");
     });

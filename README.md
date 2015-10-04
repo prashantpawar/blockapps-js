@@ -43,6 +43,8 @@ Javascript code.
     - [`accountAddress`](#accountaddressaddress)
     - [`transaction`](#transactiontransactionqueryobj)
     - [`transactionLast`](#transactionlastn)
+    - [`submitTransaction`](#submittransactiontxobj)
+    - [`transactionResult`](#transactionresulthash)
     - [`storage`](#storagestoragequeryobj)
     - [`storageAddress`](#storageaddressaddress)
   - [The `Solidity` submodule](#the-solidity-submodule)
@@ -479,19 +481,28 @@ Like `routes.block`, but queries transactions.  Its queries are:
 Returns a list of the last *n* ransactions received by the client
 operating the database.
 
- - `routes.submitTransaction(txObj)`: this is the low-level interface
-   for the `ethcore.Transaction` object.  It accepts an object
-   containing precisely the following fields, and returns a Promise
-   resolving to "transaction result" object with fields summarizing
-   the VM execution.  The Transaction and Solidity objects (below)
-   handle the most useful cases, so when using this route directly,
-   the most important fact about the transaction result is that its
-   presence indicates success.
+#### `submitTransaction(txObj)`
+
+This is the low-level interface for the `ethcore.Transaction` object.
+It accepts an object containing precisely the following fields, and
+returns a Promise resolving to "transaction result" object with fields
+summarizing the VM execution.  The Transaction and Solidity objects
+(below) handle the most useful cases, so when using this route
+directly, the most important fact about the transaction result is that
+its presence indicates success.
 
    - *nonce*, *gasPrice*, *gasLimit*: numbers.
    - *value*: a number encoded in base 10.
    - *codeOrData*, *from*, *to*: hex strings, the latter two addresses.
    - *r*, *s*, *v*, *hash*: cryptographic signature of the other parts.
+
+#### `transactionResult(hash)`
+
+This takes the hash of a transaction and returns an object containing information about its processing.  Notably, it contains the fields:
+
+  - *message*: either "Success!" or an error
+  - *trace*: the course of its EVM run
+  - *contractsCreated*, *contractsDeleted*: comma-separated lists.
 
 #### `storage(storageQueryObj)`
 

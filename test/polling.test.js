@@ -1,17 +1,8 @@
 describe("pollPromise", function() {
     before(function() {
-        polling = lib.polling;
         pollPromise = require("../js/pollPromise");
     });
-    beforeEach(function() {
-        pollevery = lib.polling.pollEveryMS;
-        timeout = lib.polling.pollTimeoutMS;
-    });
-    afterEach(function() {
-        lib.polling.pollEveryMS = pollevery;
-        lib.polling.pollTimeoutMS = timeout;
-    })
-    
+
     it("should poll", function() {
         var count = 0;
         function promise() {
@@ -20,12 +11,12 @@ describe("pollPromise", function() {
                     ++count;
                     throw new pollPromise.NotDoneError;
                 }
-                return resolve("Success!");
+                return resolve();
             });
         }
 
         polling.pollEveryMS = 5;
-        return expect(pollPromise(promise)).to.eventually.equal("Success!");
+        return expect(pollPromise(promise)).to.eventually.be.fulfilled;
     });
     it("should respond to 'pollEveryMS'", function() {
         var done = false;
@@ -76,15 +67,12 @@ describe("pollPromise", function() {
         setTimeout(finish.bind(null, 0), 15);
         var poll0 = pollPromise(promise.bind(null, 0));
 
-        // setTimeout(finish.bind(null, 1), 25);
-        // var poll1 = pollPromise(promise.bind(null, 1)).catch(
-        //     Promise.TimeoutError, function() {
-        //         return "Timed out";
-        //     });
+        setTimeout(finish.bind(null, 1), 25);
+        var poll1 = pollPromise(promise.bind(null, 1));
 
         return Promise.join(
-            expect(poll0).to.eventually.equal("Success"),
-            //expect(poll1).to.eventually.equal("Timed out"), 
+            expect(poll0).to.eventually.be.fulfilled,
+            expect(poll1).to.eventually.be.rejectedWith(Promise.TimeoutError),
             function() {}
         );
     });

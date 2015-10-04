@@ -1,8 +1,10 @@
 describe("Address type", function() {
     before(function() {
-        Address = lib.ethbase.Address;
         addrObj = Address(address);
     })
+    after(function() {
+        delete addrObj;
+    });
 
     it("should return a new Address object", function() {
         expect(Address).to.be.a('function');

@@ -1,10 +1,9 @@
 describe("setProfile", function() {
     before(function() {
-        setProfile = lib.setProfile;
         profiles = setProfile.profiles;
-        polling = lib.polling;
-        txParams = lib.ethbase.Transaction.defaults;
-        query = lib.query;
+    });
+    after(function() {
+        delete profiles
     });
     it("should contain 'hacknet' and 'ethereum' profiles", function() {
         expect(profiles).to.have.property("hacknet");
@@ -19,7 +18,7 @@ describe("setProfile", function() {
         expect([
             polling.pollEveryMS, polling.pollTimeoutMS,
             query.serverURI, query.apiPrefix,
-            txParams.gasPrice, txParams.gasLimit
+            txDefaults.gasPrice, txDefaults.gasLimit
         ]).to.eql([
             pE.pollEveryMS, pE.pollTimeoutMS,
             pE.serverURI, "/eth/v2.0",

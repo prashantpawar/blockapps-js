@@ -1,11 +1,7 @@
 describe("HTTPQuery", function() {
-    before(function() {
-        query = lib.query;
-        HTTPQuery = require("../js/HTTPQuery");
-        blockapps.filteringPath(/path\?.*/, "path");
-        setProfile = lib.setProfile;
-    });
     it("should respond to default parameters", function() {
+        var nock = require("nock");
+        
         setProfile("ethereum", "2.0");
         var blockapps2 = nock(query.serverURI + query.apiPrefix);
 
@@ -24,23 +20,25 @@ describe("HTTPQuery", function() {
             "c" : ["3", "4"],
             "d" : { "e" : 5 }
         };
-        
-        blockapps.get("/path").reply(200, "Success!");
-        var query1 = HTTPQuery("/path", {"get":params});
 
-        blockapps.post("/path").reply(200, "Success!");
-        var query2 = HTTPQuery("/path", {"post":params});
+        getRoutes.account();
+        var query1 = HTTPQuery("/account", {"get":params});
 
-        blockapps.post("/path").reply(200, "Success!");
-        var query3 = HTTPQuery("/path", {"data":params});
+        postRoutes.transaction()
+        var query2 = HTTPQuery("/transaction", {"post":params});
 
-        var query4 = HTTPQuery.bind(null,"/path", {"p":params});
+        postRoutes.transaction()
+        var query3 = HTTPQuery("/transaction", {"data":params});
+
+        function f() {
+            HTTPQuery("/path", {"p":params});
+        }
 
         return Promise.join(
-            expect(query1).to.eventually.be.ok,
-            expect(query2).to.eventually.be.ok,
-            expect(query3).to.eventually.be.ok,
-            expect(query4).to.throw(Error),
+            expect(query1).to.eventually.be.fulfilled,
+            expect(query2).to.eventually.be.fulfilled,
+            expect(query3).to.eventually.be.fulfilled,
+            expect(f).to.throw(Error),
             function() {}
         );
     });

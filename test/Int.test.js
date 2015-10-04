@@ -1,8 +1,5 @@
 describe("Int type", function() {
-    before(function() {
-        Int = lib.ethbase.Int;
-        number = 161;
-    })
+    var number = 161;
 
     it("should return a new Int object", function() {
         expect(Int).to.be.a('function');

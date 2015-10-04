@@ -42,5 +42,11 @@ function HTTPQuery(queryPath, params) {
     return request(options).
         catch(SyntaxError, function() {
             return []; // For JSON.parse
-        }).spread(function(response, body) {return body;});
+        }).
+        catch(function () {
+            throw new Error("HTTPRequest to " + options.uri + " failed");
+        }).
+        spread(function(response, body) {
+            return body;
+        });
 }

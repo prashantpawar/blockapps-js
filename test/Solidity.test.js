@@ -1,17 +1,4 @@
 describe("Solidity", function () {
-    before(function() {
-        Solidity = lib.Solidity;
-    });
-    beforeEach(function () {
-        pollevery = lib.polling.pollEveryMS;
-        timeout = lib.polling.pollTimeoutMS;
-    });
-    afterEach(function() {
-        lib.polling.pollEveryMS = pollevery;
-        lib.polling.pollTimeoutMS = timeout;
-        nock.cleanAll();
-    });
-
     describe("the Solidity constructor", function() {
         before(function() {
             code = "                 \
@@ -23,9 +10,11 @@ contract C {                             \n\
 ";
         });
         beforeEach(function() {
-            blockapps.post("/solc").reply(200, {
-                "contracts" : [{"name" : "C", "bin" : "60006c"}],
-                "xabis" : { "C" : {"x" : {}, "f" : {} } }
+            postRoutes.solc({
+                reply : {
+                    "contracts" : [{"name" : "C", "bin" : "60006c"}],
+                    "xabis" : { "C" : {"x" : {}, "f" : {} } }
+                }
             });
         });
         it("accepts valid Solidity code, returning a Solidity object", function() {
