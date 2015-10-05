@@ -319,6 +319,74 @@ describe("Solidity", function () {
                     bytes + bytes + bytes + bytes
                 );
             });
+            it("correctly interprets 'struct' as promise to JS object",
+               function() {
+                   var symtab = {
+                       "s": {
+                           "atStorageKey": "0",
+                           "bytesUsed": "40",
+                           "jsType": "Struct",
+                           "solidityType": "S"
+                       },
+                       "S": {
+                           "bytesUsed": "40",
+                           "structFields": {
+                               "bs": {
+                                   "atStorageKey": "0",
+                                   "bytesUsed": "a",
+                                   "jsType": "Bytes",
+                                   "solidityType": "bytes10"
+                               },
+                               "b": {
+                                   "atStorageKey": "0",
+                                   "bytesUsed": "1",
+                                   "jsType": "Bool",
+                                   "atStorageOffset": "a",
+                                   "solidityType": "bool"
+                               },
+                               "x": {
+                                   "atStorageKey": "1",
+                                   "bytesUsed": "20",
+                                   "jsType": "Int",
+                                   "solidityType": "int256"
+                               }
+                           },
+                           "jsType": "Struct",
+                           "solidityType": "struct {bytes10 bs; bool b; int256 x}"
+                       }
+                   };
+                   solidityMock(symtab);
+                   getRoutes.storage({
+                       n:2,
+                       query: {
+                           "address": txArgs.to,
+                           "keyhex": "0"
+                       },
+                       reply: [{
+                           "key": Word(0).toString(),
+                           "value": (new Buffer(21)).fill(0).toString("hex") +
+                               "01" + 
+                               (new Buffer("RyanCReich", "utf8")).toString("hex")
+                       }]
+                   });
+                   getRoutes.storage({
+                       query: {
+                           "address": txArgs.to,
+                           "keyhex": "1"
+                       },
+                       reply: [{
+                           "key": Word(1).toString(),
+                           "value": Int(1729).toString(16)
+                       }]
+                   });
+                   var s = newSolidityState();
+                   return expect(s.get("s")).to.eventually.eql({
+                       "bs": new Buffer("RyanCReich", "utf8"),
+                       "b": true,
+                       "x": Int(1729)
+                   });
+               }
+              );
             it("correctly interprets static array as promise to JS array",
                function() {
                    var bytes = "abcdefghij";

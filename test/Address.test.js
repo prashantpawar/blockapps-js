@@ -26,6 +26,26 @@ describe("Address type", function() {
         var addrObj2 = Address(addrObj);
         expect(addrObj.equals(addrObj2)).to.be.true;
     });
+    it("should reject other types", function() {
+        function f() {
+            return Address({});
+        }
+        expect(f).to.throw(Error);
+    });
+    it("should truncate long strings from the left", function() {
+        var addrObj2 = Address("000000000000000000000000000000000000000000000001");
+        expect(addrObj2[19]).equals(1);
+    });
+    it("should pad short strings to the left", function() {
+        var addrObj2 = Address("1");
+        expect(addrObj2[0]).equals(0);
+        expect(addrObj2[19]).equals(1);
+    });
+    it("should pad short Buffers to the left", function() {
+        var addrObj2 = Address(new Buffer("a1", "hex"));
+        expect(addrObj2[0]).equals(0);
+        expect(addrObj2[19]).equals(161);
+    });
     it("should take only one argument", function() {
         var addrObj2 = Address(address, "utf8");
         expect(addrObj.equals(addrObj2)).to.be.true;

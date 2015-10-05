@@ -42,7 +42,7 @@ function Address(x) {
         }
     }
     else {
-        throw "Address(x): x must be a number, a hex string, or a Buffer";
+        throw new Error("x must be a number, a hex string, or a Buffer");
     }
     result.toString = function() {
         return Buffer.prototype.toString.call(this,"hex");
