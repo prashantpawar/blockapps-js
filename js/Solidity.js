@@ -159,26 +159,18 @@ function makeSolObject(symTab, symRow, storage) {
     case "Enum":
         var userName = symRow["solidityType"];
         var enumNames = symTab[userName]["enumNames"];
-        var enumType = new nodeEnum(nameMap);
-        Object.defineProperties(enumType, {
-            size        : { enumerable : false },
-            indirection : { enumerable : false },
-            _options    : { enumerable : false },
-            isFlaggable : { enumerable : false }
-        });
-        Object.seal(enumType);
+        var enumType = new nodeEnum(enumNames);
 
         var symRow1 = {};
         for (name in symRow) {
             symRow1[name] = symRow[name];
         }
         symRow1["jsType"] = "Int";
-
+        symRow1["solidityType"] = "uint"
         return function () {
-            return readSolVar(symRow1, storage).call("valueOf").then(enumType.get).
-                then(function(enumVal) {
-                    Object.defineProperties(enumVal,{_options:{enumerable:false}});
-                });
+            return readSolVar(symRow1, storage).then(function(x) {
+                return enumType.get(x.valueOf());
+            })
         }
     case "Array":
         return function () {

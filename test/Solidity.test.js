@@ -120,6 +120,41 @@ describe("Solidity", function () {
                     return Buffer.isBuffer(x) && x.equals(new Buffer(bytes,"utf8"));
                 });
             });
+            it("correctly interprets 'enum' as promise to enum", function() {
+                var symtab = {
+                    "E": {
+                        "bytesUsed": "1",
+                        "jsType": "Enum",
+                        "enumNames": {
+                            "A": 0,
+                            "B": 1,
+                            "C": 2
+                        },
+                        "solidityType": "enum {A = 0, B = 1, C = 2}"
+                    },
+                    "x": {
+                        "atStorageKey": "0",
+                        "bytesUsed": "1",
+                        "jsType": "Enum",
+                        "solidityType": "E"
+                    }
+                };
+                solidityMock(symtab);
+                getRoutes.storage({
+                    query: {"address": txArgs.to, "keyhex": "0"},
+                    reply: [{
+                        "key": Word(0).toString(),
+                        "value": (function() {
+                            var buf = new Buffer(32);
+                            buf.fill(0);
+                            buf[31] = 2;
+                            return buf.toString("hex");
+                        })()
+                    }]
+                });
+                var s = newSolidityState();
+                return expect(s.get("x").get("key")).to.eventually.equal("C");
+            });
             it("correctly interprets 'int<n>' as promise to Int", function() {
                 var symtab = {
                     "x": {
@@ -234,7 +269,121 @@ describe("Solidity", function () {
                     return x.equals(y);
                 });
             });
-            it("correctly interprets Solidity dynamic array as promise to JS array",
+            it("correctly interprets 'string' as promise to string", function() {
+                var bytes = "abcdefghij";
+                var bytesHex = (new Buffer(bytes, "utf8")).toString("hex");
+                var symtab = {
+                    "s": {
+                        "atStorageKey": "0",
+                        "bytesUsed": "20",
+                        "jsType": "String",
+                        "arrayNewKeyEach": "20",
+                        "arrayDataStart": "290decd9548b62a8d60345a988386fc84ba6bc95484008f6362f93160ef3e563",
+                        "solidityType": "string"
+                    }
+                };
+                solidityMock(symtab);
+                getRoutes.storage({
+                    query: {"address": txArgs.to, "keyhex": Word(0).toString()},
+                    reply: [{
+                        "key": Word(0).toString(),
+                        "value": (function() {
+                            var buf = new Buffer(32);
+                            buf.fill(0);
+                            buf[31] = 40;
+                            return buf.toString("hex");
+                        })()
+                    }]
+                });
+                getRoutes.storage({
+                    query: {
+                        "address": txArgs.to,
+                        "minkey": Int("0x290decd9548b62a8d60345a988386fc84ba6bc95484008f6362f93160ef3e563").toString(10),
+                        "maxkey": Int("0x290decd9548b62a8d60345a988386fc84ba6bc95484008f6362f93160ef3e564").toString(10),
+                    },
+                    reply: [
+                        {
+                            "key": "290decd9548b62a8d60345a988386fc84ba6bc95484008f6362f93160ef3e563",
+                            "value": bytesHex + bytesHex + bytesHex +
+                                bytesHex.slice(0,4)
+                        },
+                        {
+                            "key": "290decd9548b62a8d60345a988386fc84ba6bc95484008f6362f93160ef3e564",
+                            "value": bytesHex.slice(4) +
+                                bytesHex + bytesHex + bytesHex.slice(0,-4)
+                        }
+                    ]
+                });
+                var s = newSolidityState();
+                return expect(s.get("s")).to.eventually.equal(
+                    bytes + bytes + bytes + bytes
+                );
+            });
+            it("correctly interprets static array as promise to JS array",
+               function() {
+                   var bytes = "abcdefghij";
+                   var bytesHex = (new Buffer(bytes, "utf8")).toString("hex");
+                   var symtab ={
+                       "a": {
+                           "arrayLength": "9",
+                           "atStorageKey": "0",
+                           "bytesUsed": "60",
+                           "jsType": "Array",
+                           "arrayElement": {
+                               "atStorageKey": "0",
+                               "bytesUsed": "a",
+                               "jsType": "Bytes",
+                               "solidityType": "bytes10"
+                           },
+                           "arrayNewKeyEach": "3",
+                           "solidityType": "bytes10[9]"
+                       }
+                   };
+                   solidityMock(symtab);
+                   getRoutes.storage({
+                       n:3,
+                       query: {
+                           "address": txArgs.to,
+                           "keyhex": 0
+                       },
+                       reply: [{
+                           "key": Word(0).toString(),
+                           "value": "0000" + bytesHex + bytesHex + bytesHex
+                       }]
+                   });
+                   getRoutes.storage({
+                       n:3,
+                       query: {
+                           "address": txArgs.to,
+                           "keyhex": 1
+                       },
+                       reply: []
+                   });
+                   getRoutes.storage({
+                       n:3,
+                       query: {
+                           "address": txArgs.to,
+                           "keyhex": 2
+                       },
+                       reply:[{
+                           "key": Word(2).toString(),
+                           "value": "0000" + bytesHex + bytesHex + bytesHex
+                       }]
+                   });
+                   var s = newSolidityState();
+                   return expect(s.get("a")).to.eventually.satisfy(function(x){
+                       var result = true;
+                       [0,1,2,6,7,8].forEach(function(i) {
+                           result = result && x[i].equals(new Buffer(bytesHex, "hex"));
+                       });
+                       [3,4,5].forEach(function(i) {
+                           result = result && x[i].equals((new Buffer(10)).fill(0));
+                       });
+                       return result;
+                   });
+               }
+              );
+            it("correctly interprets dynamic array as promise to JS array",
                function() {
                    var bytes = "abcdefghij";
                    var bytesHex = (new Buffer(bytes, "utf8")).toString("hex");
