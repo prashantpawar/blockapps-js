@@ -75,10 +75,11 @@ to the transactionResult object",
         );
         it("second argument should override the 'to' parameter", function() {     
             sendTXmock({tx: txArgs, txResult: {succeed: true}});
-            tx.send(privkeyFrom, 0);
+            var p = tx.send(privkeyFrom, null);
             expect(tx.to).to.satisfy(function(to2) {
                 return to2.equals(Address(0));
             });
+            return p;
         });
         it("second argument should be optional if 'to' is passed initially",
            function() {

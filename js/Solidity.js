@@ -216,7 +216,7 @@ function makeSolObject(symTab, symRow, storage) {
                         eltRow["atStorageOffset"] = "0x0";
                     }
                     else {
-                        var oldOff = parseInt(eltRow["atStorageOffset"]);
+                        var oldOff = parseInt(eltRow["atStorageOffset"],16);
                         eltRow["atStorageOffset"] =
                             (eltSize + oldOff).toString(16);
                     }

@@ -9,7 +9,7 @@ before(function() {
     Address = ethbase.Address;
     Storage = ethbase.Storage;
     Transaction = ethbase.Transaction;
-    Word = ethbase.Word;
+    Word = ethbase.Storage.Word;
     Units = ethbase.Units;
 
     polling = lib.polling;
@@ -139,7 +139,7 @@ before(function() {
     }
 
     faucetMock = function() {
-        args = arguments[0];
+        var args = arguments[0];
         var n = "n" in args ? args.n : 1;
         var reply = "reply" in args ? args.reply : [{}];
         var aQ = "address" in args ? { "address" : args.address } : undefined;
@@ -147,6 +147,32 @@ before(function() {
         return {
             account : getRoutes.account({query:aQ, reply:reply, n:n}),
             faucet : postRoutes.faucet({n:n})
+        };
+    }
+
+    solidityMock = function(symtab) {
+        if (symtab === undefined) {
+            symtab = {};
+        }
+        var solcReply= {
+            "contracts": [{"name" : "C", "bin" : ""}],
+            "xabis" : { "C": symtab }
+        };
+        
+        var tx = Transaction(txArgs);
+        tx.to = Address(0).toString();
+        tx.nonce = txArgs.nonce;
+        tx.data = "";
+        tx.sign(new Buffer(txArgs.privkey, "hex"));
+
+        var txResult = {succeed: true, contractsCreated: [txArgs.to]};
+
+        var txMock = sendTXmock({tx:tx, txResult:txResult});
+        return {
+            solc: postRoutes.solc({reply:solcReply}),
+            account: txMock.account,
+            transaction: txMock.transaction,
+            txResult: txMock.txResult
         };
     }
 
@@ -164,6 +190,13 @@ before(function() {
 
     address = txArgs.from;
     addrQuery = {"address" : address};
+
+    newSolidity = function() {
+        return Solidity("").call("newContract", txArgs.privkey, txArgs);
+    };
+    newSolidityState = function() {
+        return newSolidity().get("state");
+    };
 });
 
 afterEach(function() {

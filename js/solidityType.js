@@ -410,15 +410,7 @@ function simpleBuf(symRow, storage) {
 
 module.exports.isDynamic = isDynamic;
 function isDynamic(symRow) {
-    switch (symRow["jsType"]) {
-    case "Array": case "Bytes": case "String":
-        if (symRow["arrayLength"] === undefined) {
-            return true;
-        }
-        // Fall through!
-    default:
-        return false;
-    }
+    return (symRow["arrayDataStart"] !== undefined);
 }
 
 function twosComplement(symRow, x) {
