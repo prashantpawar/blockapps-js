@@ -298,8 +298,8 @@ function readInput(symRow, x) {
         }
 
         if (!isDynamic(symRow)) {
-            var bytes = parseInt(symRow["arrayLength"],16);
-            if (x.length !== bytes) {
+            var bytes = parseInt(symRow["bytesUsed"],16);
+            if (x.length !== 2 * bytes) {
                 throw "Solidity value: type bytes" + bytes + ": " +
                     bytes + " bytes (" + 2*bytes + " hex digits) required";
             }

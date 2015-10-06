@@ -319,7 +319,7 @@ describe("Solidity", function () {
                     bytes + bytes + bytes + bytes
                 );
             });
-            it("correctly interprets 'struct' as promise to JS object",
+            it("correctly interprets 'struct' as promise to object",
                function() {
                    var symtab = {
                        "s": {
@@ -528,7 +528,177 @@ describe("Solidity", function () {
               );
         });            
         describe("state mappings", function() {
-
+            it("correctly takes 'address' arguments", function() {
+                var symtab = {
+                    "x": {
+                        "atStorageKey": "0",
+                        "mappingKey": {
+                            "bytesUsed": "14",
+                            "jsType": "Address",
+                            "solidityType": "address"
+                        },
+                        "bytesUsed": "20",
+                        "jsType": "Mapping",
+                        "mappingValue": {
+                            "bytesUsed": "20",
+                            "jsType": "Int",
+                            "solidityType": "int256"
+                        },
+                        "solidityType": "mapping (address => int256)"
+                    }
+                };
+                getRoutes.storage({
+                    query: {
+                        "address": txArgs.to,
+                        "keyhex": "0b975de0ea7bdcbb33fb77f8cfd47684595c51770c1d3f9574dae844acdf2ff2"
+                    },
+                    reply: [{
+                        "key": "0b975de0ea7bdcbb33fb77f8cfd47684595c51770c1d3f9574dae844acdf2ff2",
+                        "value": Word(Int(1)).toString()
+                    }]
+                });
+                solidityMock(symtab);
+                var s = newSolidityState();
+                return expect(s.call("x", txArgs.from).call("equals", 1))
+                    .to.eventually.be.true;
+            });
+            it("correctly takes 'bool' arguments", function() {
+                var symtab = {
+                    "x": {
+                        "atStorageKey": "0",
+                        "mappingKey": {
+                            "bytesUsed": "1",
+                            "jsType": "Bool",
+                            "solidityType": "bool"
+                        },
+                        "bytesUsed": "20",
+                        "jsType": "Mapping",
+                        "mappingValue": {
+                            "bytesUsed": "20",
+                            "jsType": "Int",
+                            "solidityType": "int256"
+                        },
+                        "solidityType": "mapping (address => int256)"
+                    }
+                };
+                getRoutes.storage({
+                    query: {
+                        "address": txArgs.to,
+                        "keyhex": "ada5013122d395ba3c54772283fb069b10426056ef8ca54750cb9bb552a59e7d"
+                    },
+                    reply: [{
+                        "key": "ada5013122d395ba3c54772283fb069b10426056ef8ca54750cb9bb552a59e7d",
+                        "value": Word(Int(1)).toString()
+                    }]
+                });
+                solidityMock(symtab);
+                var s = newSolidityState();
+                return expect(s.call("x", true).call("equals", 1))
+                    .to.eventually.be.true;
+            });
+            it("correctly takes 'bytes<n>' arguments", function() {
+                var symtab = {
+                    "x": {
+                        "atStorageKey": "0",
+                        "mappingKey": {
+                            "bytesUsed": "4",
+                            "jsType": "Bytes",
+                            "solidityType": "bytes4"
+                        },
+                        "bytesUsed": "20",
+                        "jsType": "Mapping",
+                        "mappingValue": {
+                            "bytesUsed": "20",
+                            "jsType": "Int",
+                            "solidityType": "int256"
+                        },
+                        "solidityType": "mapping (address => int256)"
+                    }
+                };
+                getRoutes.storage({
+                    query: {
+                        "address": txArgs.to,
+                        "keyhex": "7d522ee7ead57ad93cf87f99e1cf6686156d688fed74505929fa32d4d774eb33"
+                    },
+                    reply: [{
+                        "key": "7d522ee7ead57ad93cf87f99e1cf6686156d688fed74505929fa32d4d774eb33",
+                        "value": Word(Int(1)).toString()
+                    }]
+                });
+                solidityMock(symtab);
+                var s = newSolidityState();
+                return expect(s.call("x", "abcd1234").call("equals", 1))
+                    .to.eventually.be.true;
+            });
+            it("correctly takes 'int<n>' arguments", function() {
+                var symtab = {
+                    "x": {
+                        "atStorageKey": "0",
+                        "mappingKey": {
+                            "bytesUsed": "4",
+                            "jsType": "Int",
+                            "solidityType": "int32"
+                        },
+                        "bytesUsed": "20",
+                        "jsType": "Mapping",
+                        "mappingValue": {
+                            "bytesUsed": "20",
+                            "jsType": "Int",
+                            "solidityType": "int256"
+                        },
+                        "solidityType": "mapping (int32 => int256)"
+                    }
+                };
+                getRoutes.storage({
+                    query: {
+                        "address": txArgs.to,
+                        "keyhex": "47b50c45b2ba1167311702ffae1e6695bc736c9a407e001fa596d0fb460dc1ce"
+                    },
+                    reply: [{
+                        "key": "47b50c45b2ba1167311702ffae1e6695bc736c9a407e001fa596d0fb460dc1ce",
+                        "value": Word(Int(1)).toString()
+                    }]
+                });
+                solidityMock(symtab);
+                var s = newSolidityState();
+                return expect(s.call("x", Int(2).pow(16)).call("equals", 1))
+                    .to.eventually.be.true;
+            });
+            it("correctly takes 'uint<n>' arguments", function() {
+                var symtab = {
+                    "x": {
+                        "atStorageKey": "0",
+                        "mappingKey": {
+                            "bytesUsed": "4",
+                            "jsType": "Int",
+                            "solidityType": "uint32"
+                        },
+                        "bytesUsed": "20",
+                        "jsType": "Mapping",
+                        "mappingValue": {
+                            "bytesUsed": "20",
+                            "jsType": "Int",
+                            "solidityType": "int256"
+                        },
+                        "solidityType": "mapping (uint32 => int256)"
+                    }
+                };
+                getRoutes.storage({
+                    query: {
+                        "address": txArgs.to,
+                        "keyhex": "4688c4a134da497cc3f0b55e9778e4537b7ad05c1cc9ae8ad6123cdcbd66f1d6"
+                    },
+                    reply: [{
+                        "key": "4688c4a134da497cc3f0b55e9778e4537b7ad05c1cc9ae8ad6123cdcbd66f1d6",
+                        "value": Word(Int(1)).toString()
+                    }]
+                });
+                solidityMock(symtab);
+                var s = newSolidityState();
+                return expect(s.call("x", -Int(2).pow(16)).call("equals", 1))
+                    .to.eventually.be.true;
+            });
+            
         });
         describe("state methods", function() {
 
