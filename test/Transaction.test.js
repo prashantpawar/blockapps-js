@@ -77,7 +77,7 @@ to the transactionResult object",
             sendTXmock({tx: txArgs, txResult: {succeed: true}});
             var p = tx.send(privkeyFrom, null);
             expect(tx.to).to.satisfy(function(to2) {
-                return to2.equals(Address(0));
+                return to2.equals(new Buffer(0));
             });
             return p;
         });

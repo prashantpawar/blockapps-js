@@ -163,7 +163,7 @@ before(function() {
         };
         
         var tx = Transaction(txArgs);
-        tx.to = Address(0).toString();
+        tx.to = "";
         tx.nonce = txArgs.nonce;
         tx.data = "";
         tx.sign(new Buffer(txArgs.privkey, "hex"));
