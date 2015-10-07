@@ -100,6 +100,9 @@ before(function() {
                     "contractsCreated" : ("contractsCreated" in txRArgs) ?
                         txRArgs.contractsCreated.join(",") : ""
                 }];
+                if ("response" in txRArgs) {
+                    txResult[0].response = txRArgs.response;
+                }
             }
         }
         return staticRoutes.transactionResult({query:query, reply:txResult, n:n});
@@ -174,6 +177,15 @@ before(function() {
             transaction: txMock.transaction,
             txResult: txMock.txResult
         };
+    }
+
+    methodMock = function(funcsym, data, returns) {
+        var fTX = Transaction(txArgs);
+        fTX.data = data;
+        fTX.nonce = txArgs.nonce;
+        fTX.sign(new Buffer(txArgs.privkey, "hex"));
+
+        return sendTXmock({tx: fTX, txResult: {succeed: true, response: returns}});
     }
 
     txArgs = {

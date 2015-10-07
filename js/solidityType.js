@@ -19,6 +19,8 @@ function solMethod(sym, symRow) {
 
         if (arguments.length === 1 &&
             arguments[0] instanceof Object &&
+            !(Buffer.isBuffer(arguments[0])) &&
+            !(Int.isInstance(arguments[0])) &&
             !(arguments[0] instanceof Array))
         { // Whew!
             var argObj = arguments[0];
@@ -43,7 +45,7 @@ function solMethod(sym, symRow) {
 
         var result = Transaction({
             "to" : this,
-            "data": funcArgs(symRow ,arr)
+            "data": funcArgs(symRow, arr)
         });
         result.txParams = txParams;
         result.callFrom = callFrom;
@@ -52,10 +54,12 @@ function solMethod(sym, symRow) {
     }
 }
 
-function txParams(txParams) {
+function txParams(given) {
     ["value", "gasPrice", "gasLimit"].forEach(function(param) {
-        if (param in txParams) {
-            this[param] = txParams[param];
+        if (param in given) {
+            // toString is necessary for our defined types
+            // the (16) is harmless for Address and Bytes, necessary for Int
+            this[param] = given[param].toString(16);
         }
     }.bind(this))
     return this;
@@ -135,9 +139,10 @@ function funcArg(symRow, y) {
     case "Array":
         var eltRows = symRow["arrayElements"];
         if (eltRows === undefined) {
-            eltRows = (new Array(y.length)).map(function() {
-                return symRow["arrayElement"];
-            });
+            eltRows = [];
+            for (var i = 0; i < y.length; ++i) {
+                eltRows.push(symRow["arrayElement"]);
+            }
         }
 
         var totalHeadLength = 0;
@@ -205,12 +210,19 @@ function decodeReturn(symRow, x) {
     
     function getLength(symRow1) {
         if (!isDynamic(symRow1)) {
-            return parseInt(symRow1.arrayLength,16);
+            var field;
+            if (symRow1["jsType"] === "Array") {
+                field = "arrayLength";
+            }
+            else {
+                field = "bytesUsed";
+            }
+            return parseInt(symRow1[field],16);
         }
         else {
-            return parseInt(go({
+            return go({
                 "jsType" : "Int", "solidityType" : "uint256"
-            }),16);
+            }).valueOf();
         }
     }
     
@@ -219,33 +231,43 @@ function decodeReturn(symRow, x) {
         switch (type) {
         case "Address":
             var result = new Buffer(20);
-            result.write(x,24,40,"hex");
+            result.write(x.slice(24),0,20,"hex");
             x = x.slice(64);
             return result;
         case "Bool":
-            var result = (x.slice(0,64)[-1] === '1');
+            var result = (x.slice(63,64) === '1');
             x = x.slice(64);
             return result;
         case "Bytes":
             var length = getLength(symRow1);
-            var roundLength = Math.floor(length + 32); // Rounded up
+            var roundLength = 32 * Math.ceil(length/32); // Rounded up
 
             var result = new Buffer(length);
             result.write(x,0,length,"hex");
-            x = x.slice(roundLength);
+            x = x.slice(2*roundLength);
             return result;
         case "Int":
             var result = twosComplement(symRow1, Int("0x" + x.slice(0,64)));
             x = x.slice(64);
             return result;
         case "String":
-            return go({ "jsType" : "Bytes" }).toString("utf8");
+            var symRow2 = {};
+            for (p in symRow1) {
+                symRow2[p] = symRow1[p];
+            }
+            symRow2.jsType = "Bytes";
+            symRow2.solidityType = "bytes";
+            return go(symRow2).toString("utf8");
         case "Array":
             var length = getLength(symRow1);
             x = x.slice(length * 64); // drop the "heads"
 
             var eltRow = symRow1["arrayElement"];
-            return (new Array(length)).map(go.bind(null, eltRow));
+            var result = [];
+            for (var i = 0; i < length; ++i) {
+                result.push(go(eltRow));
+            }
+            return result;
         default:
             throw "Solidity function call: return value cannot have type " + type;
             break;
@@ -263,7 +285,7 @@ function encodingLength(symRow) {
     var type = symRow["jsType"]
     switch (type) {
     case "Bytes":
-        return Math.floor(parseInt(symRow["bytesUsed"], 16) + 32);
+        return 32 * Math.ceil(parseInt(symRow["bytesUsed"], 16)/32);
     case "Array":
         return parseInt(symRow["arrayLength"], 16) *
             encodingLength(symRow["arrayElement"]);
@@ -375,6 +397,7 @@ function readSolVar(symRow, storage) {
             symRow1[name] = symRow[name];
         }
         symRow1["jsType"] = "Bytes";
+        symRow1.solidityType = "bytes";
         return readSolVar(symRow1, storage).call("toString", "utf8");
     default:
         throw "Solidity contract: cannot read type " + type + " from storage";
@@ -410,13 +433,20 @@ function simpleBuf(symRow, storage) {
 
 module.exports.isDynamic = isDynamic;
 function isDynamic(symRow) {
-    return (symRow["arrayDataStart"] !== undefined);
+    switch (symRow["jsType"]) {
+    case "String" : return true;
+    case "Array" : return symRow["arrayLength"] === undefined;
+    case "Bytes" : return symRow["solidityType"] === "bytes";
+    default: return false;
+    }
 }
 
 function twosComplement(symRow, x) {
     if (symRow["solidityType"][0] !== 'u') { // Signed
         var byteLength = parseInt(symRow["bytesUsed"],16);
         var modInt = Int(256).pow(byteLength);
+        x = x.mod(modInt);
+        
         var topBitInt = modInt.shiftRight(1);
         var hasTopBit = x.and(topBitInt).neq(0);
         if (hasTopBit) {
