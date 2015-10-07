@@ -47,7 +47,7 @@ function Transaction(argObj) {
         var fromAddr = Address(privateToAddress(privKeyFrom));
         tx.from = fromAddr.toString();
         if (addressTo === null) {
-            tx.to = Address(0).toString();
+            tx.to = "";
         }
         else if (addressTo !== undefined) {
             tx.to = Address(addressTo).toString();
