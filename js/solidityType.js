@@ -153,7 +153,8 @@ function funcArg(symRow, y) {
             if (isDynamic(objRow)) {
                 totalHeadLength += 32;
                 head.push(undefined);
-                tail.push(funcArg(objRow, obj));
+                var a = funcArg(objRow, obj);
+                tail.push(a);
             }
             else {
                 var enc = funcArg(objRow, obj);
@@ -166,7 +167,7 @@ function funcArg(symRow, y) {
         var currentTailLength = 0;
         head = head.map(function(z, i) {
             var lastTailLength = currentTailLength;
-            currentTailLength += tail[i].length;
+            currentTailLength += tail[i].length/2;
             if (z === undefined) {
                 return funcArg({"jsType" : "Int"},
                           Int(totalHeadLength + lastTailLength));

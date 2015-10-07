@@ -1125,6 +1125,179 @@ describe("Solidity", function () {
                     ]).txParams(txArgs).callFrom(txArgs.privkey)
                 })).to.eventually.eql(["Ryan", "Cohen", "Reich"]);
             })
+            it("correctly takes and returns nothing", function() {
+                var symtab = {
+                    "f": {
+                        "functionDomain": [],
+                        "functionArgs": [],
+                        "functionHash": "26121ff0",
+                        "bytesUsed": "0",
+                        "jsType": "Function",
+                        "solidityType": "function() returns ()"
+                    }
+                }
+                
+                solidityMock(symtab);
+                methodMock(symtab.f, symtab.f.functionHash, "");
+                var s = newSolidityState();
+                return expect(s.then(function(s) {
+                    return s.f().txParams(txArgs).callFrom(txArgs.privkey);
+                })).to.eventually.be.null;
+            })
+            it("correctly takes multiple arguments, as a list", function() {
+                var symtab = {
+                    "f": {
+                        "functionDomain": [
+                            {
+                                "atStorageKey": "0",
+                                "bytesUsed": "20",
+                                "jsType": "Int",
+                                "solidityType": "int256"
+                            },
+                            {
+                                "atStorageKey": "1",
+                                "bytesUsed": "a",
+                                "jsType": "Bytes",
+                                "solidityType": "bytes10"
+                            },
+                            {
+                                "atStorageKey": "2",
+                                "bytesUsed": "20",
+                                "jsType": "Array",
+                                "arrayElement": {
+                                    "bytesUsed": "20",
+                                    "jsType": "String",
+                                    "arrayNewKeyEach": "20",
+                                    "solidityType": "string"
+                                },
+                                "arrayNewKeyEach": "1",
+                                "arrayDataStart": "405787fa12a823e0f2b7631cc41b3ba8828b3321ca811111fa75cd3aa3bb5ace",
+                                "solidityType": "string[]"
+                            }
+                        ],
+                        "functionArgs": [
+                            "x",
+                            "y",
+                            "z"
+                        ],
+                        "functionHash": "a91bac82",
+                        "bytesUsed": "0",
+                        "jsType": "Function",
+                        "solidityType": "function(int256,bytes10,string[]) returns ()"
+                    }
+                }
+
+                var name1 = (new Buffer(32)).fill(0);
+                name1.write("Ryan");
+                var name2 = (new Buffer(32)).fill(0);
+                name2.write("Cohen");
+                var name3 = (new Buffer(32)).fill(0);
+                name3.write("Reich");
+
+                var fReturn = Word(3).toString() +
+                    Word(3*32) + Word(3*32 + 2*32) + Word(3*32 + 2*32 + 2*32) +
+                    Word(4) + name1.toString("hex") +
+                    Word(5) + name2.toString("hex") +
+                    Word(5) + name3.toString("hex");
+
+                var data = symtab.f.functionHash +
+                    Word("ffff") +
+                    "cafebabe0000deadbeef" + (new Buffer(22)).fill(0).toString("hex") +
+                    Word(3 * 32).toString() +
+                    Word(3).toString() +
+                    Word(3*32) + Word(3*32 + 2*32) + Word(3*32 + 2*32 + 2*32) +
+                    Word(4) + name1.toString("hex") +
+                    Word(5) + name2.toString("hex") +
+                    Word(5) + name3.toString("hex");
+                
+                solidityMock(symtab);
+                methodMock(symtab.f, data, "");
+                var s = newSolidityState();
+                return expect(s.then(function(s) {
+                    return s.f(
+                        Int("0xffff"),
+                        "cafebabe0000deadbeef",
+                        ["Ryan", "Cohen", "Reich"]
+                    ).txParams(txArgs).callFrom(txArgs.privkey);
+                })).to.eventually.be.null;
+            })
+            it("correctly takes multiple arguments, as an object", function() {
+                var symtab = {
+                    "f": {
+                        "functionDomain": [
+                            {
+                                "atStorageKey": "0",
+                                "bytesUsed": "20",
+                                "jsType": "Int",
+                                "solidityType": "int256"
+                            },
+                            {
+                                "atStorageKey": "1",
+                                "bytesUsed": "a",
+                                "jsType": "Bytes",
+                                "solidityType": "bytes10"
+                            },
+                            {
+                                "atStorageKey": "2",
+                                "bytesUsed": "20",
+                                "jsType": "Array",
+                                "arrayElement": {
+                                    "bytesUsed": "20",
+                                    "jsType": "String",
+                                    "arrayNewKeyEach": "20",
+                                    "solidityType": "string"
+                                },
+                                "arrayNewKeyEach": "1",
+                                "arrayDataStart": "405787fa12a823e0f2b7631cc41b3ba8828b3321ca811111fa75cd3aa3bb5ace",
+                                "solidityType": "string[]"
+                            }
+                        ],
+                        "functionArgs": [
+                            "x",
+                            "y",
+                            "z"
+                        ],
+                        "functionHash": "a91bac82",
+                        "bytesUsed": "0",
+                        "jsType": "Function",
+                        "solidityType": "function(int256,bytes10,string[]) returns ()"
+                    }
+                }
+
+                var name1 = (new Buffer(32)).fill(0);
+                name1.write("Ryan");
+                var name2 = (new Buffer(32)).fill(0);
+                name2.write("Cohen");
+                var name3 = (new Buffer(32)).fill(0);
+                name3.write("Reich");
+
+                var fReturn = Word(3).toString() +
+                    Word(3*32) + Word(3*32 + 2*32) + Word(3*32 + 2*32 + 2*32) +
+                    Word(4) + name1.toString("hex") +
+                    Word(5) + name2.toString("hex") +
+                    Word(5) + name3.toString("hex");
+
+                var data = symtab.f.functionHash +
+                    Word("ffff") +
+                    "cafebabe0000deadbeef" + (new Buffer(22)).fill(0).toString("hex") +
+                    Word(3 * 32).toString() +
+                    Word(3).toString() +
+                    Word(3*32) + Word(3*32 + 2*32) + Word(3*32 + 2*32 + 2*32) +
+                    Word(4) + name1.toString("hex") +
+                    Word(5) + name2.toString("hex") +
+                    Word(5) + name3.toString("hex");
+                
+                solidityMock(symtab);
+                methodMock(symtab.f, data, "");
+                var s = newSolidityState();
+                return expect(s.then(function(s) {
+                    return s.f({
+                        x: Int("0xffff"),
+                        y: "cafebabe0000deadbeef",
+                        z: ["Ryan", "Cohen", "Reich"]
+                    }).txParams(txArgs).callFrom(txArgs.privkey);
+                })).to.eventually.be.null;
+            })
         });
     });
     describe("the 'attach' function", function() {
