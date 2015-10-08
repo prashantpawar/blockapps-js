@@ -9,9 +9,10 @@ var ethTypes = {
 }
 
 module.exports = MultiTX;
+module.exports.address = "1e6c341f2fc96503250852ed8a20a2a654fbe0cc";
 
 var multiplexer = Solidity.attach({
-    "address": "1e6c341f2fc96503250852ed8a20a2a654fbe0cc",
+    "address": module.exports.address,
     "code": "",
     "name": "multiplexer",
     "vmCode": "",
@@ -88,7 +89,7 @@ function txParams(params) {
     var tx = this;
     ["gasPrice", "gasLimit"].forEach(function(param) {
         if (param in params) {
-            tx[param] = params[param];
+            tx[param] = params[param].toString(16);
         }
     });
     return tx;
@@ -124,7 +125,7 @@ function sendMultiTX(privkey) {
             var success = ((retStatus & 0x01) == 0);
 
             if (success) {
-                return solidityType.decodeReturn(retType, thisReturn);
+                return solidityType.decodeReturn(retType, thisReturn.toString("hex"));
             }
             else {
                 return undefined;
