@@ -21,6 +21,50 @@ describe("Solidity", function () {
             );
         });
     });
+    describe("the 'attach' function", function() {
+        it("when applied to a JSON-parsed Solidity object, reproduces the original",
+           function() {
+               var solcReply = {
+                   "contracts" : [{"name" : "C", "bin" : "60006c"}],
+                   "xabis" : { "C" : {"x" : {}, "f" : {} } }
+               };
+               postRoutes.solc({reply:solcReply});
+               return Solidity("").then(function(s) {
+                   var s2 = Solidity.attach(JSON.parse(JSON.stringify(s)));
+                   expect(s2).to.be.an.instanceOf(Solidity);
+                   expect(s2).to.eql(s);
+               });
+           }
+          );
+        it("when applied to the above plus an address, produces the correct contract object",
+           function() {
+               var symtab = {
+                   "a": {
+                       "atStorageKey": "100",
+                       "atStorageOffset": "1",
+                       "bytesUsed": "14",
+                       "jsType": "Address",
+                       "solidityType": "address"
+                   }
+               };
+               solidityMock(symtab);
+               return newSolidity().then(function(s) {
+                   var solObj = JSON.parse(JSON.stringify(Object.getPrototypeOf(s)))
+                   solObj.address = s.account.address.toString();
+                   var s2 = Solidity.attach(solObj);
+                   expect(Object.getPrototypeOf(s2)).to.be.an.instanceOf(Solidity);
+                   expect(Object.getPrototypeOf(s2)).to.eql(Object.getPrototypeOf(s));
+                   expect(s2).to.have.property("account")
+                       .which.has.property("address").which.satisfies(function(a){
+                           return a.equals(s.account.address);
+                       });
+                   expect(s2).to.have.property("state").which.satisfies(
+                       function(p) { return "a" in p }
+                   );
+               });
+           }
+          );
+    });    
     describe("contract objects", function() {
         it("Solidity prototype should have property 'newContract'", function() {
             expect(Solidity.prototype).to.have.property("newContract");
@@ -1299,8 +1343,5 @@ describe("Solidity", function () {
                 })).to.eventually.be.null;
             })
         });
-    });
-    describe("the 'attach' function", function() {
-        
     });
 });
