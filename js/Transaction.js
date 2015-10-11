@@ -19,19 +19,19 @@ function Transaction(argObj) {
         argObj = module.exports.defaults;
     }
     
-    tx.gasPrice = Int(
+    tx.gasPrice = "0x" + Int(
         !("gasPrice" in argObj) ? module.exports.defaults.gasPrice : argObj.gasPrice
     ).toString(16);
-    tx.gasLimit = Int(
+    tx.gasLimit = "0x" + Int(
         !("gasLimit" in argObj) ? module.exports.defaults.gasLimit : argObj.gasLimit
     ).toString(16);
-    tx.value    = Int(
+    tx.value    = "0x" + Int(
         !("value" in argObj) ? module.exports.defaults.value : argObj.value
     ).toString(16);
-    tx.data = argObj.data;
+    tx.data = "0x" + argObj.data;
     
     if (argObj.to !== undefined) {
-        tx.to = Address(argObj.to).toString();
+        tx.to = "0x" + Address(argObj.to).toString();
     }
     tx.toJSON = txToJSON;
     
@@ -45,16 +45,16 @@ function Transaction(argObj) {
     tx.send = function(privKeyFrom, addressTo) {
         privKeyFrom = new Buffer(privKeyFrom,"hex");
         var fromAddr = Address(privateToAddress(privKeyFrom));
-        tx.from = fromAddr.toString();
+        tx.from = "0x" + fromAddr.toString();
         if (addressTo === null) {
             tx.to = "";
         }
         else if (addressTo !== undefined) {
-            tx.to = Address(addressTo).toString();
+            tx.to = "0x" + Address(addressTo).toString();
         }
 
         return Account(fromAddr).nonce.then(function(nonce) {
-            tx.nonce = nonce.toString(16);
+            tx.nonce = "0x" + nonce.toString(16);
             tx.sign(privKeyFrom);
             return submitTransaction(tx);
         })
