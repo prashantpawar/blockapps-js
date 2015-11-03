@@ -66,12 +66,14 @@ Javascript code.
 
 ### Browserification
 
-Run the script `mkbrowser.sh` in the source directory created by npm
-(e.g. "node_modules/blockapps-js/mkbrowser.sh").  It will create a
-file called `blockapps.js` in the same directory that can be included
-in an HTML file as a script.  The call `require("blockapps-js")` is
-made available by the script to encourage you to write your supporting
-Javascript files in the same style as any Node module.
+```sh
+npm run browserify // produces blockapps.js
+# Optional: npm run minify // produces blockapps-min.js from blockapps.js
+```
+
+Both the `blockapps-js` and `bluebird` modules are available in these
+scripts, so the coding style will be identical to below both for
+browser and Node.
 
 ## BlockApps documentation
 

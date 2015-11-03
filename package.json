@@ -28,7 +28,6 @@
         "index.js",
         "mkbrowser.sh"
     ],
-    "main": "api-node",
     "repository": {
         "type": "git",
         "url": "https://github.com/blockapps/blockapps-js/blockapps-js.git"
@@ -43,6 +42,7 @@
         "ethereumjs-tx": "0.6.7",
         "ethereumjs-util": "",
         "request": "",
+        "secp256k1-browserify": "",
         "string": ""
     },
     "engines": {
@@ -63,9 +63,13 @@
         "nock": "^2.10.0"
     },
     "scripts": {
-        "build": "npm run test && npm run build-browser",
-        "build-browser": "sh mkbrowser.sh",
+        "build": "npm run test && npm run browserify && npm run minify",
+        "browserify": "browserify -r .:blockapps-js -r bluebird -d -o blockapps.js",
+        "minify": "minify blockapps.js > blockapps-min.js",
         "coveralls": "istanbul cover ./node_modules/mocha/bin/_mocha --report lcovonly -- -R spec && cat ./coverage/lcov.info | ./node_modules/coveralls/bin/coveralls.js && rm -rf ./coverage",
         "test": "mocha"
+    },
+    "browser" : {
+        "request" : "browser-request"
     }
 }

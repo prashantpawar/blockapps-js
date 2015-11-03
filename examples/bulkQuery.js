@@ -3,15 +3,13 @@ var faucet = blockapps.routes.faucet;
 var Solidity = blockapps.Solidity;
 var Promise = require("bluebird");
 
-blockapps.query.serverURI = "http://blockapps.cloudapp.net"
+blockapps.query.serverURI = "http://strato-dev.centralus.cloudapp.azure.com:443"
 blockapps.polling.pollEveryMS = 1000
 //blockapps.polling.pollTimeoutMS = 30000
 
 var contract, keystore;
 var names = {};
 var privkey = "1dd885a423f4e212740f116afa66d40aafdbb3a381079150371801871d9ea281";
-
-window.onload = start;
 
 function start() {
     document.getElementById('placardArea').value = "No donations so far...";
