@@ -277,12 +277,12 @@ setProfile(<profile name>, <optional version>)
 
 where `<profile name>` is any of the keys of `setProfile.profiles`, currently one of:
 
- - "hacknet": connects to the sandbox `http://hacknet.blockapps.net` with very
-   permissive defaults.
+ - "strato-dev": connects to the sandbox
+   `http://strato-dev.blockapps.net` with very permissive defaults.
    
- - "ethereum": connects to the live network `http://api.blockapps.net`
-   with reasonable defaults given those of the official Ethereum
-   clients.
+ - "strato-live": connects to the live network
+   `http://strato-live.blockapps.net` with reasonable defaults given
+   those of the official Ethereum clients.
 
 The `<optional version>`, if present, must be of the form `n.m`, for
 example, `1.0`, and indicates which version of the BlockApps routes is
@@ -398,7 +398,7 @@ Promises, since they must perform an asychronous request.  These
 requests are made to the BlockApps server and path at:
 
  - `query.apiPrefix`: by default, `/eth/v1.0`.
- - `query.serverURI`: by default, `http://hacknet.blockapps.net`.
+ - `query.serverURI`: by default, `http://strato-dev.blockapps.net`.
 
 Some of the routes (namely, *faucet* and *submitTransaction*) poll the
 server for their results, with the following parameters:
@@ -425,8 +425,8 @@ Like `solc`, but returns only the symTab directly.
 #### `faucet(address)`
 
 Takes an argument convertible to Address and supplies it with 1000
-ether.  This is available only on the BlockApps hacknet, for obvious
-reasons.
+ether.  This is available only on the `strato-dev` network, for
+obvious reasons.
 
 #### `block(blockQueryObj)`
 
@@ -655,7 +655,7 @@ contractObj.state.fName(args|arg1, arg2, ..)[   .txParams(params)].callFrom(priv
 ### The `MultiTX` submodule
 
 The member function `blockapps.MultiTX` makes use of a contract
-(currently only available on hacknet.blockapps.net) that sequentially
+(currently only available on strato-dev.blockapps.net) that sequentially
 executes a list of transactions in a single message call.
 
 #### Rationale

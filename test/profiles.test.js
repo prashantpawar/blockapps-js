@@ -5,15 +5,15 @@ describe("setProfile", function() {
     after(function() {
         delete profiles
     });
-    it("should contain 'hacknet' and 'ethereum' profiles", function() {
-        expect(profiles).to.have.property("hacknet");
-        expect(profiles).to.have.property("ethereum");
-        expect(Object.keys(profiles.hacknet).sort()).to
-            .eql(Object.keys(profiles.ethereum).sort());
+    it("should contain 'strato-dev' and 'strato-live' profiles", function() {
+        expect(profiles).to.have.property("strato-dev");
+        expect(profiles).to.have.property("strato-live");
+        expect(Object.keys(profiles["strato-dev"]).sort()).to
+            .eql(Object.keys(profiles["strato-live"]).sort());
     });
     it("should set the default values", function() {
-        setProfile("ethereum", "2.0");
-        var pE = profiles.ethereum;
+        setProfile("strato-live", "2.0");
+        var pE = profiles["strato-live"];
         
         expect([
             polling.pollEveryMS, polling.pollTimeoutMS,
@@ -26,6 +26,6 @@ describe("setProfile", function() {
             
         ]);
         
-        setProfile("hacknet", "1.0");
+        setProfile("strato-dev", "1.0");
     });
 });

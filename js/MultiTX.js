@@ -9,28 +9,9 @@ var ethTypes = {
 }
 
 module.exports = MultiTX;
-module.exports.address = "1e6c341f2fc96503250852ed8a20a2a654fbe0cc";
 
-var multiplexer = Solidity.attach({
-    "address": module.exports.address,
-    "code": "",
-    "name": "multiplexer",
-    "vmCode": "",
-    "symTab": {
-        "creator" : {
-            "solidityType" : "address",
-            "jsType" : "Address",
-            "atStorageKey" : 0,
-            "bytesUsed" : 20
-        },
-        "fee" : {
-            "solidityType" : "uint256",
-            "jsType" : "Int",
-            "atStorageKey" : 1,
-            "bytesUsed" : 20
-        }
-    }
-});
+var defaults = {};
+module.exports.defaults = defaults;
 
 function argEncode(type, value) {
     return solidityType.funcArg({"jsType" : type}, ethTypes[type](value));
@@ -40,6 +21,27 @@ function MultiTX(txArray) {
     if (arguments.length > 1 || !(arguments[0] instanceof Array) ) {
         throw "MultiTX takes one array as an argument";
     }
+
+    var multiplexer = Solidity.attach({
+        "address": defaults.address,
+        "code": "",
+        "name": "multiplexer",
+        "vmCode": "",
+        "symTab": {
+            "creator" : {
+                "solidityType" : "address",
+                "jsType" : "Address",
+                "atStorageKey" : 0,
+                "bytesUsed" : 20
+            },
+            "fee" : {
+                "solidityType" : "uint256",
+                "jsType" : "Int",
+                "atStorageKey" : 1,
+                "bytesUsed" : 20
+            }
+        }
+    });
 
     var totalValue = ethTypes.Int(0);
     var rets = [];

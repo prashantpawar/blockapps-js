@@ -2,7 +2,7 @@ describe("HTTPQuery", function() {
     it("should respond to default parameters", function() {
         var nock = require("nock");
         
-        setProfile("ethereum", "2.0");
+        setProfile("strato-live", "2.0");
         var blockapps2 = nock(query.serverURI + query.apiPrefix);
 
         blockapps2.get("/").reply(200, "Success!");
@@ -10,7 +10,7 @@ describe("HTTPQuery", function() {
 
         var e = expect(query2).to.eventually.be.ok;
 
-        setProfile("hacknet", "1.0");
+        setProfile("strato-dev", "1.0");
         return e;
     });
     it("should take 'get', 'post', and 'data' parameters and no others",function() {
