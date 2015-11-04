@@ -2,7 +2,7 @@ var ethValue = require("./Units.js").ethValue;
 var polling = require("./pollPromise.js").defaults;
 var txParams = require("./Transaction.js").defaults;
 var query = require("./HTTPQuery.js").defaults;
-var multiTX = reuqire("./MultiTX.js").defaults;
+var multiTX = require("./MultiTX.js").defaults;
 
 module.exports = setProfile;
 function setProfile(profName, version) {
