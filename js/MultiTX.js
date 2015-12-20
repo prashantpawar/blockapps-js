@@ -10,26 +10,8 @@ var ethTypes = {
 
 module.exports = MultiTX;
 
-var multiplexer = Solidity.attach({
-    "address": "1e6c341f2fc96503250852ed8a20a2a654fbe0cc",
-    "code": "",
-    "name": "multiplexer",
-    "vmCode": "",
-    "symTab": {
-        "creator" : {
-            "solidityType" : "address",
-            "jsType" : "Address",
-            "atStorageKey" : 0,
-            "bytesUsed" : 20
-        },
-        "fee" : {
-            "solidityType" : "uint256",
-            "jsType" : "Int",
-            "atStorageKey" : 1,
-            "bytesUsed" : 20
-        }
-    }
-});
+var defaults = {};
+module.exports.defaults = defaults;
 
 function argEncode(type, value) {
     return solidityType.funcArg({"jsType" : type}, ethTypes[type](value));
@@ -39,6 +21,27 @@ function MultiTX(txArray) {
     if (arguments.length > 1 || !(arguments[0] instanceof Array) ) {
         throw "MultiTX takes one array as an argument";
     }
+
+    var multiplexer = Solidity.attach({
+        "address": defaults.address,
+        "code": "",
+        "name": "multiplexer",
+        "vmCode": "",
+        "symTab": {
+            "creator" : {
+                "solidityType" : "address",
+                "jsType" : "Address",
+                "atStorageKey" : 0,
+                "bytesUsed" : 20
+            },
+            "fee" : {
+                "solidityType" : "uint256",
+                "jsType" : "Int",
+                "atStorageKey" : 1,
+                "bytesUsed" : 20
+            }
+        }
+    });
 
     var totalValue = ethTypes.Int(0);
     var rets = [];
@@ -88,7 +91,7 @@ function txParams(params) {
     var tx = this;
     ["gasPrice", "gasLimit"].forEach(function(param) {
         if (param in params) {
-            tx[param] = params[param];
+            tx[param] = params[param].toString(16);
         }
     });
     return tx;
@@ -124,7 +127,7 @@ function sendMultiTX(privkey) {
             var success = ((retStatus & 0x01) == 0);
 
             if (success) {
-                return solidityType.decodeReturn(retType, thisReturn);
+                return solidityType.decodeReturn(retType, thisReturn.toString("hex"));
             }
             else {
                 return undefined;

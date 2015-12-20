@@ -3,21 +3,23 @@ var request = Promise.promisify(require("request"));
 
 module.exports = HTTPQuery;
 
-var defaults = {
-    apiPrefix : "/eth/v1.0",
-    serverURI : "http://hacknet.blockapps.net"
-};
+var defaults = {};
 
 module.exports.defaults = defaults;
 
 function HTTPQuery(queryPath, params) {
     var options = {
         "uri":defaults.serverURI + defaults.apiPrefix + queryPath,
-        "json" : true
+        "json" : true,
+        rejectUnauthorized: false,
+        requestCert: true,
+        agent: false
     };
     if (Object.keys(params).length != 1) {
-        throw "HTTPQuery(_, params): params must have exactly one field, " +
-            "the method get|post|data";
+        throw new Error(
+            "HTTPQuery(_, params): params must have exactly one field, " +
+                "the method get|post|data"
+        );
     }
     var method = Object.keys(params)[0];
     switch (method) {
@@ -34,13 +36,22 @@ function HTTPQuery(queryPath, params) {
         options.body = params.data;
         break;
     default:
-        throw "HTTPQuery(_, params): params must be of the form " +
-            "{get|post|data: {<name>: <value>, ..} }";
-        break;
+        throw new Error(
+            "HTTPQuery(_, params): params must be of the form " +
+                "{get|post|data: {<name>: <value>, ..} }"
+        );
     }
 
     return request(options).
         catch(SyntaxError, function() {
-            return Promise.resolve([]); // For JSON.parse
-        }).spread(function(response, body) {return body;});
+            return []; // For JSON.parse
+        }).
+        catch(function (e) {
+            throw new Error(
+                "HTTPRequest failed:\n" + e
+            );
+        }).
+        spread(function(response, body) {
+            return body;
+        });
 }

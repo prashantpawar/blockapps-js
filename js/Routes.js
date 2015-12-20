@@ -32,8 +32,8 @@ function solc(code) {
 
 module.exports.extabi = extabi;
 function extabi(code) {
-    if (typeof code !== "string" || code.match(/[0-9a-fA-F]*/) === null) {
-        throw Promise.OperationalError("code must be a hex string");
+    if (typeof code !== "string") {
+        throw Promise.OperationalError("code must be a string");
     }
     return HTTPQuery("/extabi", {"post": {"src":code}}).
         then(function(extabi) {
@@ -51,19 +51,24 @@ function extabi(code) {
 module.exports.faucet = faucet;
 function faucet(address) {
     var addr = Address(address).toString();
-    return HTTPQuery("/faucet", {"post": {"address" : addr}}).return(
-        pollPromise(accountAddress.bind(null,addr))
-    ).catch(Promise.TimeoutError, function(e) {
-        return Promise.reject(
+    return HTTPQuery("/faucet", {"post": {"address" : addr}}).then(function() {
+        return pollPromise(accountAddress.bind(null,addr))
+    }).catch(Promise.TimeoutError, function(e) {
+        throw new Error (
             "Faucet not yet run after " +
                 pollPromise.defaults.pollTimeoutMS / 1000 + "seconds"
         );
-    }).return(Promise.resolve())
+    }).return()
 }
 
 module.exports.login = login;
 // loginObj: email, app, loginpass
 function login(loginObj, address) {
+    if (typeof loginObj !== "object") {
+        throw Promise.OperationalError(
+            "must have loginObj = {email, app, loginpass}"
+        );
+    }
     loginObj.address = Address(address).toString();
     return HTTPQuery("/login", {"post": loginObj});
 }
@@ -71,7 +76,7 @@ function login(loginObj, address) {
 module.exports.wallet = wallet;
 function wallet(loginObj, enckey) {
     if (typeof loginObj !== "object" || typeof enckey !== "string" ||
-        enckey.match(/[0-9a-fA-F]*/) === null) {
+        !enckey.match(/^[0-9a-fA-F]*$/)) {
         throw Promise.OperationalError(
             "must have loginObj = {email, app, loginpass}, " +
                 "enckey = encoded key, as hex string"
@@ -160,17 +165,20 @@ function accountAddress(address) {
 
 module.exports.submitTransaction = submitTransaction;
 function submitTransaction(txObj) {
-    return HTTPQuery("/transaction", {"data":txObj}).return(
-        pollPromise(transactionResult.bind(null, txObj.partialHash))
-    ).catch(Promise.TimeoutError, function() {
-        return Promise.reject(
+    return HTTPQuery("/transaction", {"data":txObj}).then(function(){
+        return pollPromise(transactionResult.bind(null, txObj.partialHash))
+    }).catch(Promise.TimeoutError, function() {
+        throw new Error(
             "Transaction still incomplete after " +
                 pollPromise.defaults.pollTimeoutMS / 1000 + " seconds"
         );
     }).catch(function(txResult) {
-        var msg = "Transaction failed with transaction result:\n" +
-            JSON.stringify(txResult, undefined, "  ") + "\n";
+        if (!("transactionHash" in txResult)) {
+            throw new Error("could not retrieve transactionResult");
+        }
         if (txResult.transactionHash.length != 0) {
+            var msg = "Transaction failed with transaction result:\n" +
+                JSON.stringify(txResult, undefined, "  ") + "\n";
             return transaction({hash: txResult.transactionHash}).
                 then(function(tx) {
                     return Promise.reject(msg + "\nTransaction was:\n" +
@@ -180,8 +188,7 @@ function submitTransaction(txObj) {
         else {
             return Promise.reject(msg);
         }
-
-    })
+    });
 }
 
 module.exports.transaction = transaction;
@@ -213,7 +220,7 @@ function transactionLast(n) {
 
 module.exports.transactionResult = transactionResult;
 function transactionResult(txHash) {
-    if (typeof txHash !== "string" || txHash.match(/[0-9a-fA-F]*/) === null) {
+    if (typeof txHash !== "string" || !txHash.match(/^[0-9a-fA-F]*$/)) {
         throw Promise.OperationalError("txHash must be a hex string");
     }
     return HTTPQuery("/transactionResult/" + txHash, {"get":{}}).then(
@@ -257,5 +264,5 @@ function storage(storageQueryObj) {
 
 module.exports.storageAddress = storageAddress;
 function storageAddress(address) {
-    return storage({"address": Address(address).toString()});
+    return storage({"address": Address(address).toString()}).get(0);
 }

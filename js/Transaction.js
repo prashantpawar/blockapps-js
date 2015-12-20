@@ -7,9 +7,7 @@ var Int = require("./Int.js");
 
 module.exports = Transaction;
 module.exports.defaults = {
-    "value": 0,
-    "gasPrice": 1,
-    "gasLimit": 3141592
+    "value": 0
 };
 
 // argObj = {
@@ -21,16 +19,19 @@ function Transaction(argObj) {
         argObj = module.exports.defaults;
     }
     
-    tx.gasPrice = !("gasPrice" in argObj) ?
-        module.exports.defaults.gasPrice : Int(argObj.gasPrice).toString(16);
-    tx.gasLimit = !("gasLimit" in argObj) ?
-        module.exports.defaults.gasLimit : Int(argObj.gasLimit).toString(16);
-    tx.value    = !("value" in argObj) ?
-        module.exports.defaults.value : Int(argObj.value).toString(16);
-    tx.data = argObj.data;
+    tx.gasPrice = "0x" + Int(
+        !("gasPrice" in argObj) ? module.exports.defaults.gasPrice : argObj.gasPrice
+    ).toString(16);
+    tx.gasLimit = "0x" + Int(
+        !("gasLimit" in argObj) ? module.exports.defaults.gasLimit : argObj.gasLimit
+    ).toString(16);
+    tx.value    = "0x" + Int(
+        !("value" in argObj) ? module.exports.defaults.value : argObj.value
+    ).toString(16);
+    tx.data = "0x" + argObj.data;
     
     if (argObj.to !== undefined) {
-        tx.to = Address(argObj.to).toString();
+        tx.to = "0x" + Address(argObj.to).toString();
     }
     tx.toJSON = txToJSON;
     
@@ -44,13 +45,16 @@ function Transaction(argObj) {
     tx.send = function(privKeyFrom, addressTo) {
         privKeyFrom = new Buffer(privKeyFrom,"hex");
         var fromAddr = Address(privateToAddress(privKeyFrom));
-        tx.from = fromAddr.toString();
-        if (addressTo !=/* Intentional */ undefined) {
-            tx.to = Address(addressTo).toString();
+        tx.from = Address(fromAddr).toString();
+        if (addressTo === null) {
+            tx.to = "";
+        }
+        else if (addressTo !== undefined) {
+            tx.to = "0x" + Address(addressTo).toString();
         }
 
         return Account(fromAddr).nonce.then(function(nonce) {
-            tx.nonce = nonce.toString(16);
+            tx.nonce = "0x" + nonce.toString(16);
             tx.sign(privKeyFrom);
             return submitTransaction(tx);
         })

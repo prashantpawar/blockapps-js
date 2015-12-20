@@ -11,3 +11,6 @@ module.exports.query  = require("./js/HTTPQuery.js").defaults;
 module.exports.polling = require("./js/pollPromise.js").defaults;
 module.exports.Solidity = require("./js/Solidity.js");
 module.exports.MultiTX = require("./js/MultiTX.js");
+module.exports.setProfile = require("./js/profiles.js");
+
+module.exports.setProfile("strato-dev", "1.0");
